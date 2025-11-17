@@ -3,26 +3,44 @@ import Link from 'next/link'
 export default function Home() {
   return (
     <div className="bg-gradient-to-b from-primary-50 to-white">
-      {/* Hero Section */}
-      <section className="container mx-auto px-4 py-16 md:py-24">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-4xl md:text-6xl font-bold text-primary-900 mb-4">
+      {/* Hero Section with Image */}
+      <section className="relative h-[600px] md:h-[700px] flex items-center justify-center overflow-hidden">
+        {/* Background Image */}
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage:
+              "url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2000&q=80')",
+          }}
+        >
+          {/* Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-primary-900/80 to-primary-700/60"></div>
+        </div>
+
+        {/* Content */}
+        <div className="relative z-10 max-w-4xl mx-auto px-4 text-center text-white">
+          <h1 className="text-5xl md:text-7xl font-bold mb-4 drop-shadow-lg">
             Eko Leventić
           </h1>
-          <p className="text-2xl md:text-3xl text-primary-700 mb-6 font-semibold">
+          <p className="text-2xl md:text-4xl text-primary-100 mb-6 font-semibold drop-shadow-md">
             Zlatna zrna slavonskih polja
           </p>
-          <blockquote className="text-lg md:text-xl text-gray-700 italic mb-8 max-w-3xl mx-auto border-l-4 border-primary-500 pl-6">
+          <blockquote className="text-lg md:text-xl text-white/95 italic mb-8 max-w-3xl mx-auto drop-shadow-md">
             "Proizvesti zdravo, očuvati zdravlje svoje i onih nama dragih, živjeti
             u skladu sa prirodom i educirati ljude, da prepoznaju opasnosti
             konvencionalne poljoprivrede."
           </blockquote>
           <Link
             href="/shop"
-            className="inline-block bg-primary-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-primary-700 transition-colors"
+            className="inline-block bg-primary-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-primary-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
           >
             Pregledaj proizvode
           </Link>
+        </div>
+
+        {/* Decorative wheat icon overlay */}
+        <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 text-white/20 text-6xl animate-pulse">
+          🌾
         </div>
       </section>
 
