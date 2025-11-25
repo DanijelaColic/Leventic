@@ -1,11 +1,11 @@
-# Eko Leventic - Web Shop
+# Eko Leventić - Astro Web Shop
 
-Moderna web stranica i web shop za OPG Mario Leventić - ekološke proizvode.
+Moderna web stranica i web shop za OPG Mario Leventić - ekološke proizvode, izgrađena s Astro frameworkom.
 
 ## Tehnologije
 
-- Next.js 14 (App Router)
-- React 18
+- Astro 4
+- React 18 (za interaktivne komponente)
 - TypeScript
 - Tailwind CSS
 - LocalStorage za košaricu
@@ -22,20 +22,34 @@ npm install
 npm run dev
 ```
 
-3. Otvori [http://localhost:3000](http://localhost:3000) u browseru
+3. Otvori [http://localhost:4321](http://localhost:4321) u browseru
+
+## Build za produkciju
+
+```bash
+npm run build
+```
+
+Build output će biti u `dist/` folderu.
 
 ## Struktura projekta
 
-- `app/` - Next.js App Router stranice
-- `components/` - React komponente
-- `context/` - React Context za košaricu
-- `data/` - Podaci o proizvodima
+- `src/pages/` - Astro stranice (file-based routing)
+- `src/components/` - Astro i React komponente
+- `src/layouts/` - Layout komponente
+- `src/context/` - React Context za košaricu
+- `src/data/` - Podaci o proizvodima
+- `src/styles/` - Globalni CSS stilovi
 
 ## Funkcionalnosti
 
 - ✅ Početna stranica s informacijama o OPG-u
 - ✅ Shop stranica s 5 proizvoda
-- ✅ Shopping cart funkcionalnost
+- ✅ Shopping cart funkcionalnost (React island)
+- ✅ Kontakt stranica s Google Maps
 - ✅ Responsive design
 - ✅ LocalStorage za perzistenciju košarice
 
+## Astro Islands
+
+Shopping cart funkcionalnost koristi Astro Islands pattern - React komponente se učitavaju samo gdje je potrebna interaktivnost, dok su ostale stranice statičke Astro komponente za bolje performanse.

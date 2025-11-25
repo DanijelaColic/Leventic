@@ -1,0 +1,33 @@
+---
+import AppWrapper from '../components/AppWrapper'
+import Footer from '../components/Footer.astro'
+import '../styles/globals.css'
+
+interface Props {
+  title: string
+  description?: string
+}
+
+const { title, description = 'OPG Mario Leventić - Ekološka proizvodnja žitarica i ratarskih kultura' } = Astro.props
+---
+
+<!doctype html>
+<html lang="hr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content={description} />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" href="/Eco_Leventic_Logo.png" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+  </head>
+  <body>
+    <AppWrapper client:only="react">
+      <main class="min-h-screen">
+        <slot />
+      </main>
+    </AppWrapper>
+    <Footer />
+  </body>
+</html>
+
