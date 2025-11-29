@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Product } from '../data/products'
 import { useCart } from '../context/CartContext'
+import Toast from './Toast'
 
 interface ProductDetailModalProps {
   product: Product | null
@@ -19,6 +20,8 @@ export default function ProductDetailModal({
   const [imageZoom, setImageZoom] = useState(false)
   const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 })
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
+  const [toastMessage, setToastMessage] = useState('')
+  const [showToast, setShowToast] = useState(false)
 
   useEffect(() => {
     if (isOpen) {
@@ -26,12 +29,18 @@ export default function ProductDetailModal({
       // Postavi prvu varijantu kao default
       if (product?.variants && product.variants.length > 0) {
         setSelectedVariant(product.variants[0].weight)
+      } else {
+        setSelectedVariant('')
       }
+      setQuantity(1)
+      setShowToast(false)
     } else {
       document.body.style.overflow = 'unset'
       setImageZoom(false)
       setQuantity(1)
       setSelectedImageIndex(0)
+      setSelectedVariant('')
+      setShowToast(false)
     }
     return () => {
       document.body.style.overflow = 'unset'
@@ -69,7 +78,8 @@ export default function ProductDetailModal({
 
   const handleAddToCart = () => {
     if (!selectedVariant && product.variants && product.variants.length > 0) {
-      alert('Molimo odaberite težinu proizvoda')
+      setToastMessage('Molimo odaberite težinu proizvoda')
+      setShowToast(true)
       return
     }
     
@@ -83,7 +93,8 @@ export default function ProductDetailModal({
     
     // Reset
     setQuantity(1)
-    alert('Proizvod je dodan u košaricu!')
+    
+    // Popup će se automatski prikazati preko CartAddPopup komponente
   }
 
   return (
@@ -388,6 +399,12 @@ export default function ProductDetailModal({
           </div>
         </div>
       </div>
+      <Toast
+        message={toastMessage}
+        isVisible={showToast}
+        onClose={() => setShowToast(false)}
+        type={toastMessage.includes('odaberite') ? 'error' : 'success'}
+      />
     </div>
   )
 }

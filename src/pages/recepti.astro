@@ -1,0 +1,24 @@
+---
+import RecipesPage from '../components/RecipesPage'
+import Footer from '../components/Footer.astro'
+import '../styles/globals.css'
+---
+
+<!doctype html>
+<html lang="hr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="description"
+      content="Recepti sa pirovim brašnom - Eko Leventić. Tradicionalni i moderni recepti od organskog pirovog brašna."
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" href="/Eco_Leventic_Logo.png" />
+    <title>Recepti - Eko Leventić</title>
+  </head>
+  <body>
+    <RecipesPage client:only="react" />
+    <Footer />
+  </body>
+</html>
+

@@ -1,0 +1,21 @@
+---
+import OrderConfirmationPage from '../components/OrderConfirmationPage'
+import Footer from '../components/Footer.astro'
+import '../styles/globals.css'
+---
+
+<!doctype html>
+<html lang="hr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content="Potvrda narudžbe - Eko Leventić" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" href="/Eco_Leventic_Logo.png" />
+    <title>Potvrda narudžbe - Eko Leventić</title>
+  </head>
+  <body>
+    <OrderConfirmationPage client:only="react" />
+    <Footer />
+  </body>
+</html>
+

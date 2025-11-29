@@ -1,0 +1,295 @@
+export type Recipe = {
+  id: string
+  title: string
+  image: string
+  category: 'kruh' | 'slasno' | 'slatko'
+  description: string
+  difficulty: 'lako' | 'srednje' | 'teško'
+  prepTime: string
+  cookTime: string
+  servings: string
+  ingredients?: string[]
+  instructions?: string[]
+}
+
+export const recipes: Recipe[] = [
+  {
+    id: '1',
+    title: 'Pirov kruh',
+    image: '/Pirov-kruh.jpg',
+    category: 'kruh',
+    description:
+      'Tradicionalni kruh od pirovog brašna. Hranjiv, ukusan i lako probavljiv.',
+    difficulty: 'srednje',
+    prepTime: '20 min',
+    cookTime: '45 min',
+    servings: '1 kruh',
+    ingredients: [
+      '500g integralnog pirovog brašna',
+      '300ml mlake vode',
+      '1 vrećica suhog kvasca (7g)',
+      '1 žličica soli',
+      '1 žličica meda',
+      '2 žlice maslinovog ulja',
+    ],
+    instructions: [
+      'U veliku zdjelu stavite brašno i sol.',
+      'U drugoj posudi pomiješajte mlaku vodu, kvasac i med. Ostavite 10 minuta.',
+      'Dodajte kvasac i ulje u brašno. Mijesajte 10 minuta dok tijesto ne postane glatko.',
+      'Pokrijte i ostavite da se diže 1 sat.',
+      'Oblikujte kruh i stavite u nauljeni kalup.',
+      'Pecite na 200°C oko 45 minuta.',
+    ],
+  },
+  {
+    id: '2',
+    title: 'Fokača (Focaccia) od pirovog brašna',
+    image: '/Fokaca-od-pirovog-brasna-1.jpg',
+    images: [
+      '/Fokaca-od-pirovog-brasna-1.jpg',
+      '/Fokaca-od-pirovog-brasna-2.jpg',
+      '/Fokaca-od-pirovog-brasna-3.jpg',
+      '/Fokaca-od-pirovog-brasna-4.jpg',
+    ],
+    category: 'kruh',
+    description:
+      'Talijanski kruh fokača od pirovog brašna. Savršena kao prilog ili samostalno jelo.',
+    difficulty: 'lako',
+    prepTime: '15 min',
+    cookTime: '25 min',
+    servings: '4-6 osoba',
+    ingredients: [
+      '400g bijelog pirovog brašna',
+      '250ml mlake vode',
+      '1 vrećica suhog kvasca',
+      '1 žličica soli',
+      '4 žlice maslinovog ulja',
+      'Ružmarin i cherry rajčice po želji',
+    ],
+    instructions: [
+      'Pomiješajte brašno, kvasac i sol.',
+      'Dodajte mlaku vodu i 2 žlice ulja. Mijesajte 5 minuta.',
+      'Ostavite da se diže 30 minuta.',
+      'Razvucite tijesto na pleh, napravite udubine prstima.',
+      'Prelijte preostalom uljem, dodajte ružmarin i rajčice.',
+      'Pecite na 220°C 20-25 minuta.',
+    ],
+  },
+  {
+    id: '3',
+    title: 'Palačinke od pirovog brašna',
+    image: '/Palačinke-sa-pirovim-brašnom-1.jpg',
+    category: 'slatko',
+    description:
+      'Hranjive i ukusne palačinke od pirovog brašna. Savršene za doručak ili desert.',
+    difficulty: 'lako',
+    prepTime: '10 min',
+    cookTime: '15 min',
+    servings: '4-6 palačinki',
+    ingredients: [
+      '200g integralnog pirovog brašna',
+      '2 jaja',
+      '300ml mlijeka',
+      '1 žlica šećera',
+      'Prstohvat soli',
+      'Ulje za pečenje',
+    ],
+    instructions: [
+      'Pomiješajte brašno, jaja, mlijeko, šećer i sol.',
+      'Mijesajte mikserom dok ne dobijete glatku smjesu.',
+      'Ostavite da odstoji 10-15 minuta.',
+      'Zagrijte tavu sa malo ulja.',
+      'Pecite palačinke s obje strane do zlatne boje.',
+      'Poslužite sa džemom, eurokremom ili svježim voćem.',
+    ],
+  },
+  {
+    id: '4',
+    title: 'Čokoladne buhtlice',
+    image: '/Čokoladne-buhtlice-1.jpg',
+    images: [
+      '/Čokoladne-buhtlice-1.jpg',
+      '/Čokoladne-buhtlice-2.jpg',
+    ],
+    category: 'slatko',
+    description:
+      'Mekane i ukusne čokoladne buhtlice od pirovog brašna. Omiljena poslastica!',
+    difficulty: 'srednje',
+    prepTime: '30 min',
+    cookTime: '20 min',
+    servings: '12 buhtlica',
+    ingredients: [
+      '500g bijelog pirovog brašna',
+      '250ml mlake vode',
+      '1 vrećica suhog kvasca',
+      '50g šećera',
+      '50ml ulja',
+      'Čokolada za punjenje',
+      'Prstohvat soli',
+    ],
+    instructions: [
+      'Pomiješajte brašno, kvasac, šećer i sol.',
+      'Dodajte mlaku vodu i ulje. Mijesajte 10 minuta.',
+      'Ostavite da se diže 1 sat.',
+      'Podijelite tijesto na 12 dijelova.',
+      'Svaki dio ispunite komadom čokolade i dobro zatvorite.',
+      'Pecite u tavi ili rerni na 180°C 15-20 minuta.',
+    ],
+  },
+  {
+    id: '5',
+    title: 'Vafli sa pirovim brašnom',
+    image: '/Wafli-sa-pirovim-brasnom-1.jpg',
+    images: [
+      '/Wafli-sa-pirovim-brasnom-1.jpg',
+      '/Wafli-sa-pirovim-brasnom-2.jpg',
+      '/Wafli-sa-pirovim-brasnom-3.jpg',
+    ],
+    category: 'slatko',
+    description:
+      'Hrskavi i ukusni vafli od integralnog pirovog brašna. Idealni za doručak.',
+    difficulty: 'lako',
+    prepTime: '10 min',
+    cookTime: '15 min',
+    servings: '6-8 vafla',
+    ingredients: [
+      '250g integralnog pirovog brašna',
+      '2 jaja',
+      '300ml mlijeka',
+      '50ml ulja',
+      '1 žlica šećera',
+      '1 žličica praška za pecivo',
+      'Prstohvat soli',
+    ],
+    instructions: [
+      'Odvojite bjelanjke od žumanjaka.',
+      'Pomiješajte žumanjke, mlijeko, ulje, šećer i sol.',
+      'Dodajte brašno i prašak za pecivo.',
+      'Umutite bjelanjke u snijeg i pažljivo umiješajte.',
+      'Pecite u uređaju za vafle.',
+      'Poslužite sa voćem, medom ili šlagom.',
+    ],
+  },
+  {
+    id: '6',
+    title: 'Tortilje sa pirovim brašnom',
+    image: '/tortilje-sa-pirovim-brasnom-1.jpg',
+    images: [
+      '/tortilje-sa-pirovim-brasnom-1.jpg',
+      '/Tortilja-sa-pirovim-brašnom-2.jpg',
+    ],
+    category: 'slasno',
+    description:
+      'Mekane tortilje od pirovog brašna. Savršene za wrap, taco ili quesadilla.',
+    difficulty: 'lako',
+    prepTime: '15 min',
+    cookTime: '20 min',
+    servings: '8 tortilji',
+    ingredients: [
+      '300g bijelog pirovog brašna',
+      '150ml mlake vode',
+      '2 žlice ulja',
+      '1 žličica soli',
+    ],
+    instructions: [
+      'Pomiješajte brašno i sol.',
+      'Dodajte vodu i ulje, zamijesite glatko tijesto.',
+      'Ostavite da odstoji 15 minuta.',
+      'Podijelite na 8 kuglica.',
+      'Razvaljajte svaku kuglicu u tanak krug.',
+      'Pecite na suhoj tavi s obje strane po 1-2 minute.',
+    ],
+  },
+  {
+    id: '7',
+    title: 'Soparnik od integralnog pirovog brašna',
+    image: '/Soparnik-od-pirovog-brasna.jpg',
+    category: 'slasno',
+    description:
+      'Tradicionalni dalmatinski soparnik od integralnog pirovog brašna sa blitvom.',
+    difficulty: 'srednje',
+    prepTime: '30 min',
+    cookTime: '40 min',
+    servings: '6-8 osoba',
+    ingredients: [
+      '400g integralnog pirovog brašna',
+      '250ml vode',
+      '500g blitve',
+      '3 češnja češnjaka',
+      'Peršin',
+      'Sol, papar',
+      'Maslinovo ulje',
+    ],
+    instructions: [
+      'Zamijesite tijesto od brašna, vode, soli i ulja.',
+      'Blitvu sitno nasjeckajte i pomiješajte sa češnjakom i peršinom.',
+      'Razvaljajte pola tijesta i stavite na nauljen pleh.',
+      'Rasporedite blitvu preko tijesta.',
+      'Pokrijte sa drugim dijelom razvaljenog tijesta.',
+      'Pecite na 200°C 35-40 minuta.',
+    ],
+  },
+  {
+    id: '8',
+    title: 'Varaždinski klipić',
+    image: '/Varazdinski-klipic-1.jpg',
+    images: [
+      '/Varazdinski-klipic-1.jpg',
+      '/Varazdinski-klipici-2.jpg',
+    ],
+    category: 'slatko',
+    description:
+      'Poznata varaždinska slastica - mekani kolač sa bademima i čokoladom.',
+    difficulty: 'teško',
+    prepTime: '45 min',
+    cookTime: '30 min',
+    servings: '12 komada',
+    ingredients: [
+      '300g bijelog pirovog brašna',
+      '200g mljevenih badema',
+      '150g šećera',
+      '4 jaja',
+      '100g maslaca',
+      'Čokolada za preliv',
+      'Vanilija',
+    ],
+    instructions: [
+      'Umutite maslac i šećer.',
+      'Dodajte jaja jedno po jedno.',
+      'Pomiješajte brašno i bademe, dodajte u smjesu.',
+      'Dodajte vaniliju.',
+      'Stavite u kalup i pecite na 180°C 30 minuta.',
+      'Prelijte rastopljenom čokoladom.',
+    ],
+  },
+  {
+    id: '9',
+    title: 'Fitness voćni kolač',
+    image: '/Fitness-vocni-kolac-sa-integralnim-pirovim-brasnom.jpg',
+    category: 'slatko',
+    description:
+      'Zdrav i ukusan voćni kolač od integralnog pirovog brašna. Savršen za fitness lifestyle.',
+    difficulty: 'lako',
+    prepTime: '20 min',
+    cookTime: '35 min',
+    servings: '8 komada',
+    ingredients: [
+      '250g integralnog pirovog brašna',
+      '2 jaja',
+      '100ml meda',
+      '100ml jogurta',
+      '1 žličica praška za pecivo',
+      'Sezonsko voće (borovnice, jabuke...)',
+      'Cimet',
+    ],
+    instructions: [
+      'Pomiješajte jaja, med i jogurt.',
+      'Dodajte brašno, prašak za pecivo i cimet.',
+      'Umiješajte voće.',
+      'Stavite u nauljen kalup.',
+      'Pecite na 180°C 30-35 minuta.',
+      'Ostavite da se ohladi prije rezanja.',
+    ],
+  },
+]
+

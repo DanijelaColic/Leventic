@@ -1,9 +1,21 @@
 ---
-import Layout from '../layouts/Layout.astro'
-import ShopContent from '../components/ShopContent'
+import ShopPage from '../components/ShopPage'
+import Footer from '../components/Footer.astro'
+import '../styles/globals.css'
 ---
 
-<Layout title="Shop - Eko Leventić">
-  <ShopContent client:only="react" />
-</Layout>
+<!doctype html>
+<html lang="hr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content="Eko Leventić - Ekološki proizvodi" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" href="/Eco_Leventic_Logo.png" />
+    <title>Shop - Eko Leventić</title>
+  </head>
+  <body>
+    <ShopPage client:only="react" />
+    <Footer />
+  </body>
+</html>
 

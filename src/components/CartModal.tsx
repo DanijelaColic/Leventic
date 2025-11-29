@@ -1,4 +1,5 @@
 import { useCart } from '../context/CartContext'
+import { calculateShipping } from '../utils/shipping'
 
 interface CartModalProps {
   isOpen: boolean
@@ -12,7 +13,12 @@ export default function CartModal({ isOpen, onClose }: CartModalProps) {
     updateQuantity,
     clearCart,
     getTotalPrice,
+    getTotalWeight,
   } = useCart()
+
+  const subtotal = getTotalPrice()
+  const shipping = calculateShipping(getTotalWeight())
+  const total = subtotal + shipping
 
   if (!isOpen) return null
 
@@ -88,6 +94,12 @@ export default function CartModal({ isOpen, onClose }: CartModalProps) {
                           <p className="text-sm text-gray-500">
                             {item.product.price.toFixed(2)} € / {item.product.unit}
                           </p>
+                          {/* Prikaži varijantu ako postoji u productId */}
+                          {item.product.id.includes('-') && (
+                            <p className="text-xs text-primary-600 mt-1">
+                              Varijanta: {item.product.id.split('-')[1]}
+                            </p>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
@@ -148,11 +160,21 @@ export default function CartModal({ isOpen, onClose }: CartModalProps) {
                 </div>
 
                 <div className="border-t pt-4">
-                  <div className="flex justify-between items-center mb-4">
-                    <span className="text-xl font-semibold">Ukupno:</span>
-                    <span className="text-2xl font-bold text-primary-600">
-                      {getTotalPrice().toFixed(2)} €
-                    </span>
+                  <div className="space-y-2 mb-4">
+                    <div className="flex justify-between">
+                      <span>Međuzbir:</span>
+                      <span>{subtotal.toFixed(2)} €</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Dostava:</span>
+                      <span>{shipping.toFixed(2)} €</span>
+                    </div>
+                    <div className="flex justify-between items-center pt-2 border-t">
+                      <span className="text-xl font-semibold">Ukupno:</span>
+                      <span className="text-2xl font-bold text-primary-600">
+                        {total.toFixed(2)} €
+                      </span>
+                    </div>
                   </div>
                   <div className="flex gap-4">
                     <button
@@ -163,15 +185,12 @@ export default function CartModal({ isOpen, onClose }: CartModalProps) {
                     </button>
                     <button
                       onClick={() => {
-                        alert(
-                          'Hvala vam na narudžbi! Kontaktirajte nas za završetak narudžbe.'
-                        )
-                        clearCart()
                         onClose()
+                        window.location.href = '/checkout'
                       }}
                       className="flex-1 bg-primary-600 text-white py-2 rounded-lg font-semibold hover:bg-primary-700 transition-colors"
                     >
-                      Naruči
+                      Nastavi na checkout
                     </button>
                   </div>
                 </div>

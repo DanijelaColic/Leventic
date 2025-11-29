@@ -27,6 +27,12 @@ export default function Header() {
               Shop
             </a>
             <a
+              href="/recepti"
+              className="text-gray-700 hover:text-primary-600 transition-colors"
+            >
+              Recepti
+            </a>
+            <a
               href="/contact"
               className="text-gray-700 hover:text-primary-600 transition-colors"
             >

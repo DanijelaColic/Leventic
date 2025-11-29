@@ -1,11 +1,29 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useCart } from '../context/CartContext'
 import CartModal from './CartModal'
 
 export default function CartButton() {
-  const { getTotalItems } = useCart()
+  const { getTotalItems, shouldOpenCart, setShouldOpenCart, cart } = useCart()
   const [isCartOpen, setIsCartOpen] = useState(false)
   const totalItems = getTotalItems()
+
+  // Debug log
+  useEffect(() => {
+    console.log('CartButton: cart length =', cart.length, 'totalItems =', totalItems)
+  }, [cart, totalItems])
+
+  // Otvori košaricu kada se proizvod doda
+  useEffect(() => {
+    if (shouldOpenCart && !isCartOpen) {
+      setIsCartOpen(true)
+      setShouldOpenCart(false) // Reset flag
+    }
+  }, [shouldOpenCart, isCartOpen, setShouldOpenCart])
+
+  const handleClose = () => {
+    setIsCartOpen(false)
+    setShouldOpenCart(false) // Reset flag kada se zatvori
+  }
 
   return (
     <>
@@ -33,7 +51,7 @@ export default function CartButton() {
           </span>
         )}
       </button>
-      <CartModal isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+      <CartModal isOpen={isCartOpen} onClose={handleClose} />
     </>
   )
 }

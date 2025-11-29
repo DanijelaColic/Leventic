@@ -104,7 +104,7 @@ import Layout from '../layouts/Layout.astro'
               placeholder="Vaša poruka..."
             ></textarea>
           </div>
-          <div id="form-message" class="hidden p-4 rounded-lg"></div>
+          <div id="form-message" class="hidden"></div>
           <button
             type="submit"
             class="w-full bg-primary-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-primary-700 transition-colors shadow-md hover:shadow-lg transform hover:scale-[1.02] transition-all"
@@ -172,50 +172,154 @@ import Layout from '../layouts/Layout.astro'
   </Layout>
 </Layout>
 
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('contact-form') as HTMLFormElement
-    if (!form) return
+<script is:inline>
+  (function() {
+    function initContactForm() {
+      const form = document.getElementById('contact-form')
+      if (!form) {
+        // Ako forma još nije učitana, pokušaj ponovno nakon kratkog vremena
+        setTimeout(initContactForm, 100)
+        return
+      }
 
-    form.addEventListener('submit', (event: Event) => {
+      console.log('Contact form found, attaching event listener')
+
+    form.addEventListener('submit', async function(event) {
       event.preventDefault()
       const formData = new FormData(form)
       const messageDiv = document.getElementById('form-message')
-      const submitButton = form.querySelector('button[type="submit"]') as HTMLButtonElement
+      const submitButton = form.querySelector('button[type="submit"]')
+
+      if (!submitButton) {
+        console.error('Submit button not found')
+        return
+      }
 
       // Disable submit button
       submitButton.disabled = true
       submitButton.textContent = 'Slanje...'
 
       // Get form values
-      const name = formData.get('name') as string
-      const email = formData.get('email') as string
-      const subject = formData.get('subject') as string || 'Kontakt sa web stranice'
-      const message = formData.get('message') as string
+      const name = formData.get('name')
+      const email = formData.get('email')
+      const subject = formData.get('subject')
+      const message = formData.get('message')
 
-      // Create mailto link
-      const mailtoLink = `mailto:info@eko-leventic.hr?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(`Ime: ${name}\nEmail: ${email}\n\nPoruka:\n${message}`)}`
-
-      // Show success message
-      if (messageDiv) {
-        messageDiv.className = 'p-4 rounded-lg bg-green-100 text-green-800 border border-green-300'
-        messageDiv.textContent = 'Hvala vam! Otvara se email klijent za slanje poruke.'
-        messageDiv.classList.remove('hidden')
-      }
-
-      // Open email client
-      window.location.href = mailtoLink
-
-      // Reset form after a delay
-      setTimeout(() => {
-        form.reset()
+      if (!name || !email || !message) {
+        console.error('Missing required fields')
         submitButton.disabled = false
         submitButton.textContent = 'Pošalji poruku'
         if (messageDiv) {
-          messageDiv.classList.add('hidden')
+          messageDiv.className = 'p-4 rounded-lg bg-red-100 text-red-800 border border-red-300 mb-4'
+          messageDiv.innerHTML = '<p class="font-semibold">✗ Molimo ispunite sva obavezna polja.</p>'
+          messageDiv.classList.remove('hidden')
         }
-      }, 3000)
+        return
+      }
+
+      // Clear previous messages
+      if (messageDiv) {
+        messageDiv.classList.add('hidden')
+        messageDiv.textContent = ''
+      }
+
+      try {
+        console.log('Sending contact form:', { name, email, subject, message })
+        
+        // Pripremi podatke
+        const formData = { name, email, subject, message }
+        const jsonBody = JSON.stringify(formData)
+        console.log('JSON body to send:', jsonBody)
+        console.log('JSON body length:', jsonBody.length)
+        
+        // Koristi apsolutni URL umjesto relativnog
+        const apiUrl = window.location.origin + '/api/send-contact-form'
+        console.log('API URL:', apiUrl)
+        
+        // Pošalji kroz API endpoint
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: jsonBody,
+        })
+
+        console.log('Response status:', response.status, response.statusText)
+
+        // Provjeri content type prije parsiranja
+        const contentType = response.headers.get('content-type')
+        let result
+        
+        if (contentType && contentType.includes('application/json')) {
+          try {
+            result = await response.json()
+            console.log('Response data:', result)
+          } catch (e) {
+            console.error('Failed to parse JSON response:', e)
+            const text = await response.text()
+            throw new Error(text || `HTTP ${response.status}: ${response.statusText}`)
+          }
+        } else {
+          const text = await response.text()
+          console.error('Response is not JSON:', text)
+          throw new Error(text || `HTTP ${response.status}: ${response.statusText}`)
+        }
+
+        if (!response.ok) {
+          console.error('API Error:', result)
+          throw new Error(result.error || result.details || 'Greška pri slanju poruke')
+        }
+
+        // Show success message
+        if (messageDiv) {
+          messageDiv.className = 'p-4 rounded-lg bg-green-100 text-green-800 border border-green-300 mb-4'
+          messageDiv.innerHTML = '<p class="font-semibold">✓ Hvala vam! Vaša poruka je uspješno poslana. Odgovorit ćemo vam u najkraćem mogućem roku.</p>'
+          messageDiv.classList.remove('hidden')
+          
+          // Scroll to message
+          setTimeout(() => {
+            messageDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+          }, 100)
+        }
+
+        // Reset form
+        form.reset()
+        console.log('Form submitted successfully')
+      } catch (error) {
+        console.error('Error sending contact form:', error)
+        
+        // Show error message with details
+        if (messageDiv) {
+          const errorMessage = (error && error.message) ? error.message : (typeof error === 'string' ? error : 'Nepoznata greška')
+          messageDiv.className = 'p-4 rounded-lg bg-red-100 text-red-800 border border-red-300 mb-4'
+          messageDiv.innerHTML = `
+            <p class="font-semibold mb-2">✗ Došlo je do greške pri slanju poruke.</p>
+            <p class="text-sm mb-2">${errorMessage}</p>
+            <p class="text-sm">Molimo pokušajte ponovno ili kontaktirajte nas direktno na <a href="mailto:info@eko-leventic.hr" class="underline font-semibold">info@eko-leventic.hr</a></p>
+          `
+          messageDiv.classList.remove('hidden')
+          
+          // Scroll to message
+          setTimeout(() => {
+            messageDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+          }, 100)
+        }
+      } finally {
+        submitButton.disabled = false
+        submitButton.textContent = 'Pošalji poruku'
+      }
     })
-  })
+    }
+
+    // Pokreni inicijalizaciju kada je DOM spreman
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initContactForm)
+    } else {
+      // DOM je već spreman
+      initContactForm()
+    }
+  })()
 </script>
 
