@@ -1,6 +1,7 @@
 import { defineConfig } from 'astro/config'
 import react from '@astrojs/react'
 import tailwind from '@astrojs/tailwind'
+import vercel from '@astrojs/vercel/serverless'
 
 // https://astro.build/config
 export default defineConfig({
@@ -10,9 +11,9 @@ export default defineConfig({
       applyBaseStyles: false,
     }),
   ],
-  // Koristimo server output za dev mode (adapter može imati probleme s body parsingom u dev mode)
-  // U production build-u ćemo koristiti hybrid s adapterom
+  // Koristimo server output sa Vercel adapterom za deployment
   output: 'server',
+  adapter: vercel(),
   vite: {
     server: {
       host: true, // Omogući pristup s drugih uređaja

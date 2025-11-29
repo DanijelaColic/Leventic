@@ -13,6 +13,7 @@
   "dependencies": {
     "@astrojs/react": "^3.3.1",
     "@astrojs/tailwind": "^5.1.0",
+    "@astrojs/vercel": "^7.8.2",
     "@supabase/supabase-js": "^2.86.0",
     "astro": "^4.5.0",
     "react": "^18.2.0",
@@ -20,7 +21,6 @@
     "resend": "^6.5.2"
   },
   "devDependencies": {
-    "@astrojs/vercel": "^7.8.2",
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
     "autoprefixer": "^10.4.16",
