@@ -13,7 +13,14 @@ export default defineConfig({
   ],
   // Koristimo server output sa Vercel adapterom za deployment
   output: 'server',
-  adapter: vercel(),
+  adapter: vercel({
+    webAnalytics: {
+      enabled: false,
+    },
+    functionPerRoute: false,
+    imageService: true,
+    edgeMiddleware: false,
+  }),
   vite: {
     server: {
       host: true, // Omogući pristup s drugih uređaja
