@@ -2,6 +2,30 @@ import { useEffect, useState } from 'react'
 import type { Product } from '../data/products'
 import { useCart } from '../context/CartContext'
 import Toast from './Toast'
+import { recipes, type Recipe } from '../data/recipes'
+
+// Mapiranje proizvoda s povezanim receptima
+const getRelatedRecipes = (productName: string): Recipe[] => {
+  const name = productName.toLowerCase()
+  
+  // Recepti koji koriste bijelo pirovo brašno
+  const bijeloRecipes = ['2', '4', '6', '8'] // Fokača, Čokoladne buhtlice, Tortilje, Varaždinski klipić
+  // Recepti koji koriste integralno pirovo brašno
+  const integralnoRecipes = ['1', '3', '5', '7', '9'] // Pirov kruh, Palačinke, Vafli, Soparnik, Fitness kolač
+  
+  let recipeIds: string[] = []
+  
+  if (name.includes('bijelo')) {
+    recipeIds = bijeloRecipes
+  } else if (name.includes('integralno') || name.includes('griz')) {
+    recipeIds = integralnoRecipes
+  } else if (name.includes('oštro') || name.includes('oljušteni')) {
+    // Za oštro brašno i oljušteni pir, prikaži mix recepata
+    recipeIds = ['1', '2', '3', '6']
+  }
+  
+  return recipes.filter(r => recipeIds.includes(r.id)).slice(0, 3)
+}
 
 interface ProductDetailModalProps {
   product: Product | null
@@ -149,7 +173,7 @@ export default function ProductDetailModal({
                 {productImages.map((image, index) => (
                   <div
                     key={index}
-                    className="relative w-full h-96 bg-primary-100 rounded-lg overflow-hidden cursor-zoom-in"
+                    className="relative w-full h-96 bg-gradient-to-b from-primary-50 to-white rounded-lg overflow-hidden cursor-zoom-in border border-gray-100"
                     onMouseEnter={() => {
                       setImageZoom(true)
                       setSelectedImageIndex(index)
@@ -394,6 +418,55 @@ export default function ProductDetailModal({
                     </div>
                   </div>
                 )}
+
+                {/* Related Recipes Section */}
+                {(() => {
+                  const relatedRecipes = getRelatedRecipes(product.name)
+                  if (relatedRecipes.length === 0) return null
+                  
+                  return (
+                    <div className="pt-6 border-t">
+                      <h3 className="text-xl font-bold text-primary-900 mb-4 flex items-center gap-2">
+                        🍳 Povezani recepti
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Isprobajte naše recepte s ovim proizvodom:
+                      </p>
+                      <div className="grid grid-cols-3 gap-3">
+                        {relatedRecipes.map((recipe) => (
+                          <a
+                            key={recipe.id}
+                            href="/recepti"
+                            className="group block bg-primary-50 rounded-lg overflow-hidden hover:shadow-md transition-all"
+                          >
+                            <div className="aspect-square relative overflow-hidden">
+                              <img
+                                src={recipe.image}
+                                alt={recipe.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                              <div className="absolute bottom-0 left-0 right-0 p-2">
+                                <span className="text-white text-xs font-medium line-clamp-2">
+                                  {recipe.title}
+                                </span>
+                              </div>
+                            </div>
+                          </a>
+                        ))}
+                      </div>
+                      <a
+                        href="/recepti"
+                        className="mt-4 inline-flex items-center gap-1 text-primary-600 hover:text-primary-700 text-sm font-medium"
+                      >
+                        Pogledaj sve recepte
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </a>
+                    </div>
+                  )
+                })()}
               </div>
             </div>
           </div>

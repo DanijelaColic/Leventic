@@ -22,8 +22,17 @@ export default function CartModal({ isOpen, onClose }: CartModalProps) {
 
   if (!isOpen) return null
 
+  // Funkcija za otvaranje proizvoda u shopu
+  const handleProductClick = (productId: string) => {
+    onClose()
+    // Ako je ID s varijantom (npr. "1-5kg"), uzmi samo osnovni ID
+    const baseId = productId.includes('-') ? productId.split('-')[0] : productId
+    // Navigiraj na shop s parametrom proizvoda
+    window.location.href = `/shop?product=${baseId}`
+  }
+
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+    <div className="fixed inset-0 z-[60] overflow-y-auto">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black bg-opacity-50"
@@ -80,15 +89,23 @@ export default function CartModal({ isOpen, onClose }: CartModalProps) {
                       className="flex items-center justify-between border-b pb-4"
                     >
                       <div className="flex items-center gap-4 flex-1">
-                        <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-primary-100">
+                        <div 
+                          className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-gradient-to-b from-primary-50 to-white cursor-pointer hover:ring-2 hover:ring-primary-400 transition-all p-1 border border-gray-100"
+                          onClick={() => handleProductClick(item.product.id)}
+                          title="Pogledaj proizvod"
+                        >
                           <img
                             src={item.product.image}
                             alt={item.product.name}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-contain"
                           />
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-semibold text-lg">
+                          <h3 
+                            className="font-semibold text-lg cursor-pointer hover:text-primary-600 transition-colors"
+                            onClick={() => handleProductClick(item.product.id)}
+                            title="Pogledaj proizvod"
+                          >
                             {item.product.name}
                           </h3>
                           <p className="text-sm text-gray-500">

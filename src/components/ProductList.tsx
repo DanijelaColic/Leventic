@@ -1,16 +1,39 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useCart } from '../context/CartContext'
 import { products } from '../data/products'
 import type { Product } from '../data/products'
 import ProductDetailModal from './ProductDetailModal'
 
 export default function ProductList() {
-  const { addToCart } = useCart()
+  const { addToCart, shouldOpenCart } = useCart()
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   // Debug log
   console.log('ProductList: Rendering with', products.length, 'products')
+
+  // Zatvori ProductDetailModal kada se otvara košarica
+  useEffect(() => {
+    if (shouldOpenCart && isModalOpen) {
+      setIsModalOpen(false)
+      setSelectedProduct(null)
+    }
+  }, [shouldOpenCart, isModalOpen])
+
+  // Auto-otvori proizvod ako je proslijeđen preko URL parametra
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const productId = urlParams.get('product')
+    if (productId) {
+      const product = products.find(p => p.id === productId)
+      if (product) {
+        setSelectedProduct(product)
+        setIsModalOpen(true)
+        // Očisti URL parametar
+        window.history.replaceState({}, '', '/shop')
+      }
+    }
+  }, [])
 
   const handleProductClick = (product: Product) => {
     setSelectedProduct(product)
@@ -75,13 +98,13 @@ export default function ProductList() {
               className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow flex flex-col"
           >
             <div
-              className="h-64 bg-white relative overflow-hidden flex items-center justify-center cursor-pointer border-b border-gray-100"
+              className="h-64 bg-gradient-to-b from-primary-50 to-white relative overflow-hidden flex items-center justify-center cursor-pointer border-b border-gray-100 p-4"
               onClick={() => handleProductClick(product)}
             >
               <img
                 src={product.image}
                 alt={product.name}
-                className="w-full h-full object-cover"
+                className="max-w-full max-h-full object-contain drop-shadow-md hover:scale-105 transition-transform duration-300"
                 loading="lazy"
               />
               <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-full w-12 h-12 flex items-center justify-center text-2xl shadow-md">

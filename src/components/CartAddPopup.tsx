@@ -82,11 +82,11 @@ export default function CartAddPopup({
         <div className="p-6">
           {/* Product Info */}
           <div className="flex items-center gap-4 mb-6 pb-6 border-b">
-            <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-primary-100">
+            <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gradient-to-b from-primary-50 to-white p-1 border border-gray-100">
               <img
                 src={addedItem.product.image}
                 alt={addedItem.product.name}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
               />
             </div>
             <div className="flex-1 min-w-0">

@@ -1,0 +1,61 @@
+---
+import Layout from '../layouts/Layout.astro'
+---
+
+<Layout title="Dostava - Eko Leventić">
+  <div class="bg-gray-50 min-h-screen py-12">
+    <div class="container mx-auto px-4">
+      <div class="max-w-3xl mx-auto bg-white rounded-lg shadow-md p-8">
+        <h1 class="text-3xl font-bold text-primary-900 mb-8">Dostava</h1>
+        
+        <div class="prose prose-primary max-w-none">
+          <h2 class="text-xl font-semibold text-primary-800 mt-6 mb-3">1. Rokovi isporuke</h2>
+          <div class="bg-primary-50 p-4 rounded-lg mb-4">
+            <div class="flex items-center gap-3 mb-2">
+              <span class="text-2xl">🚚</span>
+              <div>
+                <p class="font-semibold text-primary-900">Unutar Hrvatske</p>
+                <p class="text-gray-700">2–5 radnih dana</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">🏝️</span>
+              <div>
+                <p class="font-semibold text-primary-900">Otoci</p>
+                <p class="text-gray-700">3–7 radnih dana</p>
+              </div>
+            </div>
+          </div>
+
+          <h2 class="text-xl font-semibold text-primary-800 mt-6 mb-3">2. Cijena dostave</h2>
+          <p class="text-gray-700 mb-4">
+            Cijena dostave obračunava se prema važećem cjeniku dostavne službe i prikazana je 
+            u košarici prije završetka kupnje.
+          </p>
+
+          <h2 class="text-xl font-semibold text-primary-800 mt-6 mb-3">3. Način isporuke</h2>
+          <p class="text-gray-700 mb-4">
+            Proizvodi se šalju putem <strong>DPD dostavne službe</strong>.
+          </p>
+
+          <h2 class="text-xl font-semibold text-primary-800 mt-6 mb-3">4. Oštećenje pošiljke</h2>
+          <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+            <p class="text-gray-700">
+              <strong>Važno:</strong> Kupac je dužan prijaviti oštećenje pošiljke dostavljaču i prodavatelju 
+              odmah po primitku ili u roku od <strong>24 sata</strong>.
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-8 pt-6 border-t flex gap-4">
+          <a href="/" class="text-primary-600 hover:text-primary-700 font-medium">
+            ← Povratak na početnu
+          </a>
+          <a href="/povrati" class="text-primary-600 hover:text-primary-700 font-medium">
+            Povrati i reklamacije →
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
