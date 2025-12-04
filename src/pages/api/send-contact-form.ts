@@ -1,11 +1,24 @@
 import { Resend } from 'resend'
 import type { APIRoute } from 'astro'
 
-const resend = new Resend(import.meta.env.RESEND_API_KEY)
-
 export const POST: APIRoute = async ({ request }) => {
   try {
     console.log('=== Contact Form API Called ===')
+
+    // Provjeri da li je API key postavljen
+    const apiKey = import.meta.env.RESEND_API_KEY
+    if (!apiKey) {
+      console.error('RESEND_API_KEY is not configured!')
+      return new Response(
+        JSON.stringify({
+          error: 'Email service not configured',
+          details: 'RESEND_API_KEY environment variable is missing. Please configure it in Vercel dashboard.',
+        }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const resend = new Resend(apiKey)
     console.log('Request method:', request.method)
     console.log('Request URL:', request.url)
     console.log('Content-Type:', request.headers.get('content-type'))
