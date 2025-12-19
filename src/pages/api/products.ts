@@ -11,7 +11,7 @@ export const GET: APIRoute = async () => {
     const { data, error } = await supabase
       .from('products')
       .select('*')
-      .order('name')
+      .order('id')
 
     if (error) {
       // Ako nema proizvoda u Supabase, koristi fallback

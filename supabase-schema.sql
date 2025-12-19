@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS products (
   storage TEXT,
   expiry TEXT,
   nutrition JSONB,
+  available BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

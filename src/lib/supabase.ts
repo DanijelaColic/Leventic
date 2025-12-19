@@ -39,6 +39,7 @@ export type DbProduct = {
     protein: string
     salt?: string
   }
+  available?: boolean
   created_at?: string
   updated_at?: string
 }

@@ -178,14 +178,34 @@ export default function OrderConfirmation({ orderId }: OrderConfirmationProps) {
               <span>{order.subtotal.toFixed(2)} €</span>
             </div>
             <div className="flex justify-between">
-              <span>Dostava:</span>
-              <span>{order.shipping.toFixed(2)} €</span>
+              <span>
+                {order.deliveryMethod === 'pickup' ? 'Osobno preuzimanje:' : 'Dostava:'}
+              </span>
+              <span className={order.deliveryMethod === 'pickup' ? 'text-green-600 font-medium' : ''}>
+                {order.deliveryMethod === 'pickup' ? 'Besplatno' : `${order.shipping.toFixed(2)} €`}
+              </span>
             </div>
             <div className="flex justify-between items-center pt-2 border-t font-bold text-lg">
               <span>Ukupno:</span>
               <span className="text-primary-600">{order.total.toFixed(2)} €</span>
             </div>
           </div>
+
+          {/* Info o načinu preuzimanja */}
+          {order.deliveryMethod === 'pickup' && (
+            <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <span className="text-xl">🏠</span>
+                <div>
+                  <p className="font-semibold text-green-900">Osobno preuzimanje</p>
+                  <p className="text-sm text-green-800 mt-1">
+                    {order.customer.address}<br />
+                    {order.customer.postalCode} {order.customer.city}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Podaci za uplatu */}
@@ -286,21 +306,36 @@ export default function OrderConfirmation({ orderId }: OrderConfirmationProps) {
       {/* Što se događa dalje */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
         <h3 className="text-xl font-semibold text-blue-900 mb-4">
-          📦 Što se događa dalje?
+          {order.deliveryMethod === 'pickup' ? '🏠' : '📦'} Što se događa dalje?
         </h3>
-        <ol className="list-decimal list-inside space-y-2 text-blue-900">
-          <li>Izvršite uplatu koristeći podatke navedene gore</li>
-          <li>
-            Provjerit ćemo vašu uplatu prema bankovnom izvodu (može potrajati 1-2
-            radna dana)
-          </li>
-          <li>
-            Nakon potvrde uplate, promijeniti ćemo status narudžbe na "Uplaćeno /
-            Processing"
-          </li>
-          <li>Pripremit ćemo i poslati vaše proizvode</li>
-          <li>Obavijestit ćemo vas kada narudžba bude poslana</li>
-        </ol>
+        {order.deliveryMethod === 'pickup' ? (
+          <ol className="list-decimal list-inside space-y-2 text-blue-900">
+            <li>Izvršite uplatu koristeći podatke navedene gore</li>
+            <li>
+              Provjerit ćemo vašu uplatu prema bankovnom izvodu (može potrajati 1-2
+              radna dana)
+            </li>
+            <li>
+              Nakon potvrde uplate, kontaktirat ćemo vas radi dogovora termina preuzimanja
+            </li>
+            <li>Pripremit ćemo vaše proizvode za preuzimanje</li>
+            <li>Preuzmite narudžbu na dogovorenoj lokaciji</li>
+          </ol>
+        ) : (
+          <ol className="list-decimal list-inside space-y-2 text-blue-900">
+            <li>Izvršite uplatu koristeći podatke navedene gore</li>
+            <li>
+              Provjerit ćemo vašu uplatu prema bankovnom izvodu (može potrajati 1-2
+              radna dana)
+            </li>
+            <li>
+              Nakon potvrde uplate, promijeniti ćemo status narudžbe na "Uplaćeno /
+              Processing"
+            </li>
+            <li>Pripremit ćemo i poslati vaše proizvode</li>
+            <li>Obavijestit ćemo vas kada narudžba bude poslana</li>
+          </ol>
+        )}
       </div>
 
       <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-8">

@@ -11,7 +11,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "seed:products": "node --loader tsx scripts/seed-products.ts"
+    "seed:products": "node --import tsx scripts/seed-products.ts"
   },
   "dependencies": {
     "@astrojs/react": "^4.0.0",
@@ -19,6 +19,8 @@
     "@astrojs/vercel": "^8.0.0",
     "@supabase/supabase-js": "^2.86.0",
     "astro": "^5.0.0",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^3.0.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "resend": "^6.5.2"

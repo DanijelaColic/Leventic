@@ -31,6 +31,7 @@ export type Product = {
   storage?: string
   expiry?: string
   nutrition?: NutritionInfo
+  available?: boolean
 }
 
 export const products: Product[] = [

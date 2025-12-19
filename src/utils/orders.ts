@@ -3,6 +3,8 @@ export type { CartItem }
 
 export type OrderStatus = 'pending_payment' | 'processing' | 'shipped' | 'completed' | 'cancelled'
 
+export type DeliveryMethod = 'delivery' | 'pickup'
+
 export interface Order {
   id: string // Broj narudžbe (npr. 12345678, bez # - dodaje se samo za prikaz)
   orderNumber: string // Isti kao id (npr. 12345678)
@@ -23,6 +25,7 @@ export interface Order {
   status: OrderStatus
   createdAt: string // ISO date string
   paymentReference: string // Broj narudžbe kao payment reference
+  deliveryMethod: DeliveryMethod // 'delivery' = dostava, 'pickup' = osobno preuzimanje
 }
 
 /**

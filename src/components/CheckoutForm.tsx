@@ -1,23 +1,50 @@
-import { useState, FormEvent } from 'react'
+import { useState, FormEvent, useEffect } from 'react'
 import { useCart } from '../context/CartContext'
-import { calculateShipping } from '../utils/shipping'
+import { calculateShippingSync, calculateShipping } from '../utils/shipping'
 import {
   generateOrderNumber,
   saveOrder,
   type Order,
+  type DeliveryMethod,
 } from '../utils/orders'
 
 interface CheckoutFormProps {
   onOrderComplete: (orderId: string) => void
 }
 
+// Adresa za osobno preuzimanje
+const PICKUP_ADDRESS = {
+  name: 'OPG Mario Leventić',
+  address: 'Osječka 120',
+  city: 'Čepin',
+  postalCode: '31431',
+  phone: '+385 91 736 9919',
+}
+
 export default function CheckoutForm({ onOrderComplete }: CheckoutFormProps) {
   const { cart, getTotalPrice, getTotalWeight, clearCart } = useCart()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>('delivery')
+  const [shippingCost, setShippingCost] = useState(0)
+
+  // Učitaj postavke dostave i izračunaj cijenu
+  useEffect(() => {
+    const loadShippingCost = async () => {
+      if (deliveryMethod === 'pickup') {
+        setShippingCost(0)
+        return
+      }
+      const totalWeight = getTotalWeight()
+      const cost = await calculateShipping(totalWeight)
+      setShippingCost(cost)
+    }
+    loadShippingCost()
+  }, [deliveryMethod, cart])
 
   const subtotal = getTotalPrice()
-  const shipping = calculateShipping(getTotalWeight())
+  // Dostava je 0 € za osobno preuzimanje
+  const shipping = deliveryMethod === 'pickup' ? 0 : shippingCost
   const total = subtotal + shipping
 
   const [formData, setFormData] = useState({
@@ -63,17 +90,21 @@ export default function CheckoutForm({ onOrderComplete }: CheckoutFormProps) {
     if (!formData.phone.trim()) {
       newErrors.phone = 'Telefon je obavezan'
     }
-    if (!formData.address.trim()) {
-      newErrors.address = 'Adresa je obavezna'
-    }
-    if (!formData.city.trim()) {
-      newErrors.city = 'Grad je obavezan'
-    }
-    if (!formData.postalCode.trim()) {
-      newErrors.postalCode = 'Poštanski broj je obavezan'
-    }
-    if (!formData.country.trim()) {
-      newErrors.country = 'Država je obavezna'
+
+    // Adresna polja su obavezna samo za dostavu
+    if (deliveryMethod === 'delivery') {
+      if (!formData.address.trim()) {
+        newErrors.address = 'Adresa je obavezna'
+      }
+      if (!formData.city.trim()) {
+        newErrors.city = 'Grad je obavezan'
+      }
+      if (!formData.postalCode.trim()) {
+        newErrors.postalCode = 'Poštanski broj je obavezan'
+      }
+      if (!formData.country.trim()) {
+        newErrors.country = 'Država je obavezna'
+      }
     }
 
     setErrors(newErrors)
@@ -101,10 +132,21 @@ export default function CheckoutForm({ onOrderComplete }: CheckoutFormProps) {
       
       console.log('CheckoutForm: Creating order with ID:', orderId)
 
+      // Za osobno preuzimanje, koristi adresu preuzimanja u customer podatcima
+      const customerData = deliveryMethod === 'pickup'
+        ? {
+            ...formData,
+            address: PICKUP_ADDRESS.address,
+            city: PICKUP_ADDRESS.city,
+            postalCode: PICKUP_ADDRESS.postalCode,
+            country: 'Hrvatska',
+          }
+        : formData
+
       const order: Order = {
         id: orderId,
         orderNumber,
-        customer: formData,
+        customer: customerData,
         items: [...cart],
         subtotal,
         shipping,
@@ -112,6 +154,7 @@ export default function CheckoutForm({ onOrderComplete }: CheckoutFormProps) {
         status: 'pending_payment',
         createdAt: new Date().toISOString(),
         paymentReference: orderNumber,
+        deliveryMethod,
       }
 
       // Spremi u localStorage (za backup)
@@ -125,9 +168,9 @@ export default function CheckoutForm({ onOrderComplete }: CheckoutFormProps) {
           customer_name: `${formData.firstName} ${formData.lastName}`,
           customer_email: formData.email,
           customer_phone: formData.phone,
-          customer_address: formData.address,
-          customer_city: formData.city,
-          customer_postal_code: formData.postalCode,
+          customer_address: customerData.address,
+          customer_city: customerData.city,
+          customer_postal_code: customerData.postalCode,
           items: cart.map((item) => ({
             productId: item.product.id,
             productName: item.product.name,
@@ -139,7 +182,9 @@ export default function CheckoutForm({ onOrderComplete }: CheckoutFormProps) {
           shipping_cost: shipping,
           total,
           status: 'pending',
-          notes: `Država: ${formData.country}`,
+          notes: deliveryMethod === 'pickup' 
+            ? '🏠 OSOBNO PREUZIMANJE' 
+            : `📦 DOSTAVA - Država: ${formData.country}`,
         }
 
         const response = await fetch('/api/admin/orders', {
@@ -191,8 +236,76 @@ export default function CheckoutForm({ onOrderComplete }: CheckoutFormProps) {
       <div className="grid md:grid-cols-2 gap-8">
         {/* Forma */}
         <div>
-          <h2 className="text-2xl font-semibold mb-6">Podaci za dostavu</h2>
+          <h2 className="text-2xl font-semibold mb-6">Podaci za narudžbu</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Odabir načina preuzimanja */}
+            <div className="bg-gray-50 rounded-lg p-4 mb-2">
+              <p className="text-sm font-medium text-gray-700 mb-3">
+                Način preuzimanja *
+              </p>
+              <div className="space-y-3">
+                <label
+                  className={`flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                    deliveryMethod === 'delivery'
+                      ? 'border-primary-500 bg-primary-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="deliveryMethod"
+                    value="delivery"
+                    checked={deliveryMethod === 'delivery'}
+                    onChange={() => setDeliveryMethod('delivery')}
+                    className="mt-1"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-gray-900">
+                        📦 Dostava na adresu
+                      </span>
+                      <span className="text-sm font-medium text-primary-600">
+                        {shippingCost.toFixed(2)} €
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Dostava na vašu adresu unutar 2-5 radnih dana
+                    </p>
+                  </div>
+                </label>
+
+                <label
+                  className={`flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                    deliveryMethod === 'pickup'
+                      ? 'border-primary-500 bg-primary-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="deliveryMethod"
+                    value="pickup"
+                    checked={deliveryMethod === 'pickup'}
+                    onChange={() => setDeliveryMethod('pickup')}
+                    className="mt-1"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-gray-900">
+                        🏠 Osobno preuzimanje
+                      </span>
+                      <span className="text-sm font-medium text-green-600">
+                        Besplatno
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {PICKUP_ADDRESS.name}, {PICKUP_ADDRESS.address}, {PICKUP_ADDRESS.city}
+                    </p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label
@@ -283,104 +396,136 @@ export default function CheckoutForm({ onOrderComplete }: CheckoutFormProps) {
               )}
             </div>
 
-            <div>
-              <label
-                htmlFor="address"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Adresa *
-              </label>
-              <input
-                type="text"
-                id="address"
-                name="address"
-                value={formData.address}
-                onChange={handleChange}
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-                  errors.address ? 'border-red-500' : 'border-gray-300'
-                }`}
-              />
-              {errors.address && (
-                <p className="text-red-500 text-sm mt-1">{errors.address}</p>
-              )}
-            </div>
+            {/* Adresna polja - prikazuju se samo za dostavu */}
+            {deliveryMethod === 'delivery' && (
+              <>
+                <div>
+                  <label
+                    htmlFor="address"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Adresa *
+                  </label>
+                  <input
+                    type="text"
+                    id="address"
+                    name="address"
+                    value={formData.address}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                      errors.address ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  />
+                  {errors.address && (
+                    <p className="text-red-500 text-sm mt-1">{errors.address}</p>
+                  )}
+                </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label
-                  htmlFor="city"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Grad *
-                </label>
-                <input
-                  type="text"
-                  id="city"
-                  name="city"
-                  value={formData.city}
-                  onChange={handleChange}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-                    errors.city ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                />
-                {errors.city && (
-                  <p className="text-red-500 text-sm mt-1">{errors.city}</p>
-                )}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label
+                      htmlFor="city"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Grad *
+                    </label>
+                    <input
+                      type="text"
+                      id="city"
+                      name="city"
+                      value={formData.city}
+                      onChange={handleChange}
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                        errors.city ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    />
+                    {errors.city && (
+                      <p className="text-red-500 text-sm mt-1">{errors.city}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="postalCode"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Poštanski broj *
+                    </label>
+                    <input
+                      type="text"
+                      id="postalCode"
+                      name="postalCode"
+                      value={formData.postalCode}
+                      onChange={handleChange}
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                        errors.postalCode ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    />
+                    {errors.postalCode && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.postalCode}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="country"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Država *
+                  </label>
+                  <select
+                    id="country"
+                    name="country"
+                    value={formData.country}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                      errors.country ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  >
+                    <option value="Hrvatska">Hrvatska</option>
+                    <option value="Slovenija">Slovenija</option>
+                    <option value="Srbija">Srbija</option>
+                    <option value="Bosna i Hercegovina">
+                      Bosna i Hercegovina
+                    </option>
+                    <option value="Ostalo">Ostalo</option>
+                  </select>
+                  {errors.country && (
+                    <p className="text-red-500 text-sm mt-1">{errors.country}</p>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Info za osobno preuzimanje */}
+            {deliveryMethod === 'pickup' && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">🏠</span>
+                  <div>
+                    <p className="font-semibold text-green-900">
+                      Adresa za preuzimanje
+                    </p>
+                    <p className="font-medium text-green-800 mt-1">
+                      {PICKUP_ADDRESS.name}
+                    </p>
+                    <p className="text-green-800">
+                      {PICKUP_ADDRESS.address}<br />
+                      {PICKUP_ADDRESS.postalCode} {PICKUP_ADDRESS.city}
+                    </p>
+                    <p className="text-green-800 mt-1">
+                      Tel: {PICKUP_ADDRESS.phone}
+                    </p>
+                    <p className="text-sm text-green-700 mt-2">
+                      Kontaktirat ćemo vas nakon uplate radi dogovora termina preuzimanja.
+                    </p>
+                  </div>
+                </div>
               </div>
-
-              <div>
-                <label
-                  htmlFor="postalCode"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Poštanski broj *
-                </label>
-                <input
-                  type="text"
-                  id="postalCode"
-                  name="postalCode"
-                  value={formData.postalCode}
-                  onChange={handleChange}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-                    errors.postalCode ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                />
-                {errors.postalCode && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.postalCode}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <label
-                htmlFor="country"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Država *
-              </label>
-              <select
-                id="country"
-                name="country"
-                value={formData.country}
-                onChange={handleChange}
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-                  errors.country ? 'border-red-500' : 'border-gray-300'
-                }`}
-              >
-                <option value="Hrvatska">Hrvatska</option>
-                <option value="Slovenija">Slovenija</option>
-                <option value="Srbija">Srbija</option>
-                <option value="Bosna i Hercegovina">
-                  Bosna i Hercegovina
-                </option>
-                <option value="Ostalo">Ostalo</option>
-              </select>
-              {errors.country && (
-                <p className="text-red-500 text-sm mt-1">{errors.country}</p>
-              )}
-            </div>
+            )}
 
             <button
               type="submit"
@@ -459,8 +604,12 @@ export default function CheckoutForm({ onOrderComplete }: CheckoutFormProps) {
                 <span>{subtotal.toFixed(2)} €</span>
               </div>
               <div className="flex justify-between">
-                <span>Dostava:</span>
-                <span>{shipping.toFixed(2)} €</span>
+                <span>
+                  {deliveryMethod === 'pickup' ? 'Osobno preuzimanje:' : 'Dostava:'}
+                </span>
+                <span className={deliveryMethod === 'pickup' ? 'text-green-600 font-medium' : ''}>
+                  {deliveryMethod === 'pickup' ? 'Besplatno' : `${shipping.toFixed(2)} €`}
+                </span>
               </div>
               <div className="flex justify-between items-center pt-2 border-t font-bold text-lg">
                 <span>Ukupno:</span>

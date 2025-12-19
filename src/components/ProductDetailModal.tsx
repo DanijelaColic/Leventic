@@ -87,10 +87,13 @@ export default function ProductDetailModal({
   )
   const currentPrice = selectedVariantData?.price || product.price
 
-  // Koristi images array ako postoji, inače samo glavnu sliku
-  const productImages = product.images && product.images.length > 0 
-    ? product.images 
-    : [product.image]
+  // Kombiniraj glavnu sliku (image) s dodatnim slikama (images)
+  // Prva slika u array-u je glavna, ostale su dodatne
+  const productImages = product.image
+    ? [product.image, ...(product.images || [])]
+    : product.images && product.images.length > 0
+    ? product.images
+    : []
 
   const handleImageMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!imageZoom) return
@@ -101,6 +104,13 @@ export default function ProductDetailModal({
   }
 
   const handleAddToCart = () => {
+    // Provjeri da li je proizvod dostupan
+    if (product.available === false) {
+      setToastMessage('Ovaj proizvod trenutno nije dostupan')
+      setShowToast(true)
+      return
+    }
+
     if (!selectedVariant && product.variants && product.variants.length > 0) {
       setToastMessage('Molimo odaberite težinu proizvoda')
       setShowToast(true)
@@ -137,9 +147,16 @@ export default function ProductDetailModal({
         >
           {/* Header */}
           <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between z-10">
-            <h2 className="text-2xl md:text-3xl font-bold text-primary-900">
-              {product.name}
-            </h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-2xl md:text-3xl font-bold text-primary-900">
+                {product.name}
+              </h2>
+              {product.available === false && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                  Nedostupan
+                </span>
+              )}
+            </div>
             <button
               onClick={onClose}
               className="text-gray-500 hover:text-gray-700 transition-colors"
@@ -281,12 +298,21 @@ export default function ProductDetailModal({
                 </div>
 
                 {/* Add to Cart Button */}
-                <button
-                  onClick={handleAddToCart}
-                  className="w-full bg-primary-600 text-white py-4 rounded-lg font-semibold hover:bg-primary-700 transition-colors text-lg shadow-md hover:shadow-lg"
-                >
-                  Dodaj u košaricu
-                </button>
+                {product.available === false ? (
+                  <button
+                    disabled
+                    className="w-full bg-gray-300 text-gray-500 py-4 rounded-lg font-semibold cursor-not-allowed text-lg shadow-md"
+                  >
+                    Proizvod nije dostupan
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleAddToCart}
+                    className="w-full bg-primary-600 text-white py-4 rounded-lg font-semibold hover:bg-primary-700 transition-colors text-lg shadow-md hover:shadow-lg"
+                  >
+                    Dodaj u košaricu
+                  </button>
+                )}
 
                 {/* Description */}
                 {product.detailedDescription && (

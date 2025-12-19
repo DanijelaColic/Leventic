@@ -7,7 +7,7 @@ export const GET: APIRoute = async () => {
     const { data, error } = await supabaseAdmin
       .from('products')
       .select('*')
-      .order('name')
+      .order('id')
 
     if (error) throw error
 

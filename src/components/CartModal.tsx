@@ -1,5 +1,6 @@
+import { useState, useEffect } from 'react'
 import { useCart } from '../context/CartContext'
-import { calculateShipping } from '../utils/shipping'
+import { calculateShippingSync, calculateShipping } from '../utils/shipping'
 
 interface CartModalProps {
   isOpen: boolean
@@ -16,8 +17,22 @@ export default function CartModal({ isOpen, onClose }: CartModalProps) {
     getTotalWeight,
   } = useCart()
 
+  const [shippingCost, setShippingCost] = useState(0)
+
+  // Učitaj postavke dostave i izračunaj cijenu
+  useEffect(() => {
+    if (!isOpen) return
+    
+    const loadShippingCost = async () => {
+      const totalWeight = getTotalWeight()
+      const cost = await calculateShipping(totalWeight)
+      setShippingCost(cost)
+    }
+    loadShippingCost()
+  }, [cart, isOpen, getTotalWeight])
+
   const subtotal = getTotalPrice()
-  const shipping = calculateShipping(getTotalWeight())
+  const shipping = shippingCost
   const total = subtotal + shipping
 
   if (!isOpen) return null
@@ -182,10 +197,15 @@ export default function CartModal({ isOpen, onClose }: CartModalProps) {
                       <span>Međuzbir:</span>
                       <span>{subtotal.toFixed(2)} €</span>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                       <span>Dostava:</span>
-                      <span>{shipping.toFixed(2)} €</span>
+                      <span className="text-sm">
+                        od <span className="font-semibold">{shipping.toFixed(2)} €</span>
+                      </span>
                     </div>
+                    <p className="text-xs text-gray-500 italic">
+                      Ili besplatno osobno preuzimanje
+                    </p>
                     <div className="flex justify-between items-center pt-2 border-t">
                       <span className="text-xl font-semibold">Ukupno:</span>
                       <span className="text-2xl font-bold text-primary-600">

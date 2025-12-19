@@ -206,7 +206,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         return total + minWeight * item.quantity
       }
       
-      // Ako nema varijanti, pretpostavi 1kg po jedinici
+      // Ako nema varijanti, pokušaj izvući težinu iz naziva proizvoda
+      const nameWeight = parseWeight(item.product.name)
+      if (nameWeight > 0) {
+        return total + nameWeight * item.quantity
+      }
+      
+      // Ako ništa ne radi, pretpostavi 1kg po jedinici
       return total + 1 * item.quantity
     }, 0)
   }

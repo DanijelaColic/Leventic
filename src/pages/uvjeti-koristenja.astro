@@ -6,44 +6,112 @@ import Layout from '../layouts/Layout.astro'
   <div class="bg-gray-50 min-h-screen py-12">
     <div class="container mx-auto px-4">
       <div class="max-w-3xl mx-auto bg-white rounded-lg shadow-md p-8">
-        <h1 class="text-3xl font-bold text-primary-900 mb-8">Uvjeti korištenja</h1>
-        
+        <h1 class="text-3xl font-bold text-primary-900 mb-8">UVJETI KORIŠTENJA</h1>
+
         <div class="prose prose-primary max-w-none">
+          <!-- 1. Općenito -->
           <h2 class="text-xl font-semibold text-primary-800 mt-6 mb-3">1. Općenito</h2>
           <p class="text-gray-700 mb-4">
-            Ovi Uvjeti korištenja uređuju korištenje web stranice i uvjete kupnje proizvoda. 
+            Ovi Uvjeti korištenja uređuju korištenje web stranice i uvjete kupnje proizvoda.
             Prodavatelj je:
           </p>
           <div class="bg-primary-50 p-4 rounded-lg mb-4">
-            <p class="font-semibold text-primary-900">OPG Mario Leventić</p>
+            <p class="font-semibold text-primary-900">Prodavatelj:</p>
+            <p class="text-gray-700">OPG Mario Leventić</p>
             <p class="text-gray-700">Osječka 120, Čepin</p>
+            <p class="text-gray-700">Upisan u Upisnik poljoprivrednika pod MIBPG: 193640</p>
             <p class="text-gray-700">
+              E-mail:
               <a href="mailto:info@eko-leventic.hr" class="text-primary-600 hover:underline">info@eko-leventic.hr</a>
             </p>
-            <p class="text-gray-700">+385 91 736 9919</p>
+            <p class="text-gray-700">Telefon: +385 91 736 9919</p>
             <p class="text-gray-700 mt-2">
-              <span class="text-sm text-gray-500">IBAN:</span><br/>
+              <span class="text-sm text-gray-500">IBAN:</span><br />
               HR6225000093120447816
             </p>
           </div>
+          <p class="text-gray-700 mb-4">
+            Korištenjem ove web stranice korisnik potvrđuje da je upoznat i suglasan s ovim Uvjetima korištenja.
+          </p>
 
+          <!-- 2. Proizvodi i cijene -->
           <h2 class="text-xl font-semibold text-primary-800 mt-6 mb-3">2. Proizvodi i cijene</h2>
           <p class="text-gray-700 mb-4">
-            Sve cijene su izražene u eurima (EUR) i uključuju PDV. 
-            Prodavatelj zadržava pravo promjene cijena bez prethodne najave.
+            Sve cijene proizvoda izražene su u eurima (EUR) i uključuju PDV.
+            Prodavatelj zadržava pravo izmjene cijena, dostupnosti proizvoda i uvjeta kupnje u bilo kojem trenutku, bez
+            prethodne najave.
+          </p>
+          <p class="text-gray-700 mb-4">Cijena vrijedi u trenutku narudžbe.</p>
           </p>
 
+          <!-- 3. Narudžba -->
           <h2 class="text-xl font-semibold text-primary-800 mt-6 mb-3">3. Narudžba</h2>
           <p class="text-gray-700 mb-4">
-            Kupoprodajni ugovor između korisnika i prodavatelja smatra se sklopljenim u trenutku 
-            kada korisnik završi narudžbu i primi potvrdu narudžbe na e-mail.
+            Narudžba se smatra potvrđenom u trenutku kada korisnik ispuni obrazac za kupnju i zaprimi potvrdu narudžbe na
+            e-mail adresu.
+          </p>
+          <p class="text-gray-700 mb-4">
+            Kupoprodajni ugovor između korisnika i prodavatelja smatra se sklopljenim kada prodavatelj pošalje potvrdu
+            narudžbe.
+          </p>
+          <p class="text-gray-700 mb-2">Prodavatelj zadržava pravo odbiti narudžbu u slučaju:</p>
+          <ul class="list-disc list-inside text-gray-700 mb-4 space-y-1">
+            <li>nedostupnosti proizvoda</li>
+            <li>očite pogreške u cijeni</li>
+            <li>podataka koji nisu valjani</li>
+          </ul>
+
+          <!-- 4. Plaćanje -->
+          <h2 class="text-xl font-semibold text-primary-800 mt-6 mb-3">4. Plaćanje</h2>
+          <p class="text-gray-700 mb-2">Dostupan način plaćanja je:</p>
+          <ul class="list-disc list-inside text-gray-700 mb-4 space-y-1">
+            <li>uplata na transakcijski račun (bankovna uplata)</li>
+          </ul>
+          <p class="text-gray-700 mb-4">
+            Podaci za uplatu prikazuju se prilikom završetka narudžbe i u e-mail potvrdi. Narudžba se obrađuje nakon vidljive
+            uplate.
           </p>
 
-          <h2 class="text-xl font-semibold text-primary-800 mt-6 mb-3">4. Plaćanje</h2>
-          <p class="text-gray-700 mb-2">Dostupni način plaćanja:</p>
+          <!-- 5. Dostava -->
+          <h2 class="text-xl font-semibold text-primary-800 mt-6 mb-3">5. Dostava</h2>
+          <p class="text-gray-700 mb-4">
+            Dostava se vrši putem ugovorene dostavne službe na teritoriju Republike Hrvatske. Rok dostave najčešće iznosi
+            2–5 radnih dana, ovisno o odabranoj dostavnoj službi i adresi primatelja. Trošak dostave prikazuje se prilikom
+            narudžbe. Prodavatelj ne snosi odgovornost za kašnjenja prouzrokovana dostavnom službom.
+          </p>
+
+          <!-- 6. Povrati i reklamacije -->
+          <h2 class="text-xl font-semibold text-primary-800 mt-6 mb-3">6. Povrati i reklamacije</h2>
+          <p class="text-gray-700 mb-4">Kupac ima pravo na povrat proizvoda sukladno Zakonu o zaštiti potrošača.</p>
+          <p class="text-gray-700 mb-4">
+            Povrat je moguć u roku od 14 dana od primitka proizvoda, uz prethodnu najavu na: 📩
+            <a href="mailto:info@eko-leventic.hr" class="text-primary-600 hover:underline">info@eko-leventic.hr</a>.
+          </p>
+          <p class="text-gray-700 mb-2">Proizvod mora biti:</p>
           <ul class="list-disc list-inside text-gray-700 mb-4 space-y-1">
-            <li>Transakcijski račun</li>
+            <li>nekorišten</li>
+            <li>neoštećen</li>
+            <li>u originalnom stanju</li>
           </ul>
+          <p class="text-gray-700 mb-4">
+            Trošak povrata snosi kupac, osim u slučaju reklamacije. U slučaju oštećenog, pogrešnog ili neispravnog proizvoda,
+            kupac je dužan fotografirati problem i poslati reklamaciju putem e-maila. Prodavatelj će u najkraćem roku izvršiti
+            zamjenu ili povrat sredstava.
+          </p>
+
+          <!-- 7. Odgovornost za informacije -->
+          <h2 class="text-xl font-semibold text-primary-800 mt-6 mb-3">7. Odgovornost za informacije</h2>
+          <p class="text-gray-700 mb-4">
+            Prodavatelj nastoji osigurati ažurne i točne informacije, ali ne može jamčiti potpunu točnost svih podataka. Slike
+            proizvoda simbolične su i mogu odstupati od stvarnog izgleda.
+          </p>
+
+          <!-- 8. Pravna zaštita -->
+          <h2 class="text-xl font-semibold text-primary-800 mt-6 mb-3">8. Pravna zaštita</h2>
+          <p class="text-gray-700 mb-4">
+            Na ove Uvjete korištenja primjenjuje se pravo Republike Hrvatske. U slučaju spora, nadležan je sud prema sjedištu
+            prodavatelja.
+          </p>
         </div>
 
         <div class="mt-8 pt-6 border-t flex gap-4">

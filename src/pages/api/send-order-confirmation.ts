@@ -125,9 +125,20 @@ function generateEmailHtml(order: any): string {
 
   <div style="background-color: #f9fafb; padding: 15px; border-radius: 8px; margin: 20px 0;">
     <p style="margin: 5px 0;"><strong>Međuzbir:</strong> <span style="float: right;">${order.subtotal.toFixed(2)} €</span></p>
-    <p style="margin: 5px 0;"><strong>Dostava:</strong> <span style="float: right;">${order.shipping.toFixed(2)} €</span></p>
+    <p style="margin: 5px 0;"><strong>${order.deliveryMethod === 'pickup' ? 'Osobno preuzimanje:' : 'Dostava:'}</strong> <span style="float: right;${order.deliveryMethod === 'pickup' ? ' color: #059669; font-weight: bold;' : ''}">${order.deliveryMethod === 'pickup' ? 'Besplatno' : order.shipping.toFixed(2) + ' €'}</span></p>
     <p style="margin: 10px 0; padding-top: 10px; border-top: 2px solid #e5e7eb; font-size: 18px;"><strong>UKUPNO:</strong> <span style="float: right; color: #2563eb; font-size: 20px;">${order.total.toFixed(2)} €</span></p>
   </div>
+
+  ${order.deliveryMethod === 'pickup' ? `
+  <div style="background-color: #f0fdf4; border: 2px solid #22c55e; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <p style="margin: 0 0 10px 0; font-weight: bold; color: #166534; font-size: 16px;">🏠 OSOBNO PREUZIMANJE</p>
+    <p style="margin: 0; color: #15803d;">
+      ${order.customer.address}<br>
+      ${order.customer.postalCode} ${order.customer.city}
+    </p>
+    <p style="margin: 10px 0 0 0; font-size: 14px; color: #166534;">Kontaktirat ćemo vas nakon uplate radi dogovora termina preuzimanja.</p>
+  </div>
+  ` : ''}
 
   <h2 style="color: #1f2937; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; margin-top: 30px;">📝 PODACI ZA UPLATU</h2>
   
@@ -174,7 +185,16 @@ function generateEmailHtml(order: any): string {
   </div>
 
   <div style="background-color: #f0f9ff; border-radius: 8px; padding: 20px; margin: 30px 0;">
-    <h3 style="margin: 0 0 15px 0; color: #1e40af; font-size: 18px;">📦 Što se događa dalje?</h3>
+    <h3 style="margin: 0 0 15px 0; color: #1e40af; font-size: 18px;">${order.deliveryMethod === 'pickup' ? '🏠' : '📦'} Što se događa dalje?</h3>
+    ${order.deliveryMethod === 'pickup' ? `
+    <ol style="margin: 0; padding-left: 20px; color: #1e3a8a;">
+      <li style="margin: 8px 0;">Izvršite uplatu koristeći podatke navedene gore</li>
+      <li style="margin: 8px 0;">Provjerit ćemo vašu uplatu prema bankovnom izvodu (može potrajati 1-2 radna dana)</li>
+      <li style="margin: 8px 0;">Nakon potvrde uplate, kontaktirat ćemo vas radi dogovora termina preuzimanja</li>
+      <li style="margin: 8px 0;">Pripremit ćemo vaše proizvode za preuzimanje</li>
+      <li style="margin: 8px 0;">Preuzmite narudžbu na dogovorenoj lokaciji</li>
+    </ol>
+    ` : `
     <ol style="margin: 0; padding-left: 20px; color: #1e3a8a;">
       <li style="margin: 8px 0;">Izvršite uplatu koristeći podatke navedene gore</li>
       <li style="margin: 8px 0;">Provjerit ćemo vašu uplatu prema bankovnom izvodu (može potrajati 1-2 radna dana)</li>
@@ -182,6 +202,7 @@ function generateEmailHtml(order: any): string {
       <li style="margin: 8px 0;">Pripremit ćemo i poslati vaše proizvode</li>
       <li style="margin: 8px 0;">Obavijestit ćemo vas kada narudžba bude poslana</li>
     </ol>
+    `}
   </div>
 
   <p style="margin-top: 30px; font-size: 16px;">Hvala vam na povjerenju!</p>
