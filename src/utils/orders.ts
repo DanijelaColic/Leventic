@@ -1,4 +1,5 @@
 import type { CartItem } from '../context/CartContext'
+import { hasFunctionalCookieConsent } from '../components/CookieConsent'
 export type { CartItem }
 
 export type OrderStatus = 'pending_payment' | 'processing' | 'shipped' | 'completed' | 'cancelled'
@@ -41,6 +42,11 @@ export function generateOrderNumber(): string {
  * Sprema narudžbu u localStorage
  */
 export function saveOrder(order: Order): void {
+  // Provjeri pristanak prije spremanja
+  if (!hasFunctionalCookieConsent()) {
+    return
+  }
+  
   const orders = getOrders()
   orders.push(order)
   localStorage.setItem('eko-leventic-orders', JSON.stringify(orders))
@@ -50,6 +56,11 @@ export function saveOrder(order: Order): void {
  * Dohvaća sve narudžbe iz localStorage
  */
 export function getOrders(): Order[] {
+  // Provjeri pristanak prije učitavanja
+  if (!hasFunctionalCookieConsent()) {
+    return []
+  }
+  
   const saved = localStorage.getItem('eko-leventic-orders')
   if (!saved) return []
   try {

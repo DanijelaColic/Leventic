@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { products, type Product } from '../data/products'
 import { parseWeight } from '../utils/shipping'
+import { hasFunctionalCookieConsent } from '../components/CookieConsent'
 
 export interface CartItem {
   product: Product
@@ -39,6 +40,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   // Load cart from localStorage on mount
   useEffect(() => {
+    // Provjeri pristanak prije učitavanja
+    if (!hasFunctionalCookieConsent()) {
+      isInitialMount.current = false
+      return
+    }
+
     const savedCart = localStorage.getItem('eko-leventic-cart')
     if (savedCart) {
       try {
@@ -56,6 +63,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   // Save cart to localStorage whenever it changes
   useEffect(() => {
+    // Provjeri pristanak prije spremanja
+    if (!hasFunctionalCookieConsent()) {
+      return
+    }
+    
     localStorage.setItem('eko-leventic-cart', JSON.stringify(cart))
   }, [cart])
 

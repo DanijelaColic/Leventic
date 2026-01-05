@@ -2,6 +2,7 @@ import { useEffect, type ReactNode } from 'react'
 import { CartProvider, useCart } from '../context/CartContext'
 import Header from './Header'
 import CartAddPopup from './CartAddPopup'
+import CookieConsent from './CookieConsent'
 
 function AppContent({ children }: { children: ReactNode }) {
   const {
@@ -40,6 +41,7 @@ function AppContent({ children }: { children: ReactNode }) {
         onViewCart={handleViewCart}
         addedItem={lastAddedItem}
       />
+      <CookieConsent />
     </>
   )
 }
