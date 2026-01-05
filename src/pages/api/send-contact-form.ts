@@ -56,10 +56,10 @@ export const POST: APIRoute = async ({ request }) => {
     const emailSubject = subject || 'Kontakt sa web stranice - Eko Leventić'
     const emailHtml = generateContactEmailHtml(name, email, subject, message)
 
-    // PRIVREMENO: Šalje se na test email za testiranje
-    const testEmail = 'dgaric1@gmail.com'
+    // Email ide na službeni kontakt email
+    const contactEmail = 'info@eko-leventic.hr'
     
-    console.log('Attempting to send email to:', testEmail)
+    console.log('Attempting to send email to:', contactEmail)
     console.log('Email subject:', emailSubject)
     
     // Pošalji email kroz Resend
@@ -68,7 +68,7 @@ export const POST: APIRoute = async ({ request }) => {
     try {
       resendResponse = await resend.emails.send({
         from: 'Eko Leventić Web <onboarding@resend.dev>', // Koristi Resend test domain za sada
-        to: testEmail, // Privremeno samo na test email
+        to: contactEmail, // Email ide na službeni kontakt
         replyTo: email, // Odgovor ide na email korisnika koji je poslao poruku
         subject: emailSubject,
         html: emailHtml,

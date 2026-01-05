@@ -23,10 +23,15 @@ export default function OrdersManager() {
       const response = await fetch('/api/admin/orders')
       if (response.ok) {
         const data = await response.json()
-        setOrders(data)
+        setOrders(data || [])
+      } else {
+        console.error('Error loading orders: HTTP', response.status)
+        const errorData = await response.json().catch(() => ({}))
+        alert(`Greška pri učitavanju narudžbi: ${errorData.error || 'Nepoznata greška'}`)
       }
     } catch (error) {
       console.error('Error loading orders:', error)
+      alert(`Greška pri učitavanju narudžbi: ${error instanceof Error ? error.message : 'Nepoznata greška'}`)
     } finally {
       setLoading(false)
     }

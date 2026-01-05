@@ -4,6 +4,22 @@ import { supabaseAdmin } from '../../../../lib/supabase'
 // GET - Dohvaćanje svih postavki
 export const GET: APIRoute = async () => {
   try {
+    // Provjeri da li su Supabase kredencijali postavljeni
+    const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL
+    const serviceRoleKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      return new Response(
+        JSON.stringify({
+          error: 'Supabase nije konfiguriran. Provjerite .env fajl sa PUBLIC_SUPABASE_URL i SUPABASE_SERVICE_ROLE_KEY',
+        }),
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      )
+    }
+
     const { data, error } = await supabaseAdmin.from('settings').select('*')
 
     if (error) throw error
@@ -18,12 +34,24 @@ export const GET: APIRoute = async () => {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching settings:', error)
-    return new Response(JSON.stringify({ error: 'Failed to fetch settings' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    
+    // Detaljnija greška za debugging
+    const errorMessage = error?.message || 'Nepoznata greška'
+    const isNetworkError = errorMessage.includes('ENOTFOUND') || errorMessage.includes('fetch failed')
+    
+    return new Response(
+      JSON.stringify({
+        error: isNetworkError
+          ? 'Ne mogu se povezati na Supabase. Provjerite da li je PUBLIC_SUPABASE_URL ispravan u .env fajlu.'
+          : `Greška pri dohvaćanju postavki: ${errorMessage}`,
+      }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    )
   }
 }
 

@@ -25,6 +25,10 @@ export default function AdminDashboard() {
       const hash = window.location.hash.replace('#', '')
       if (hash === 'products' || hash === 'orders' || hash === 'settings') {
         setCurrentPage(hash)
+      } else if (!hash) {
+        // Ako nema hash-a, postavi default na products i dodaj hash u URL
+        setCurrentPage('products')
+        window.location.hash = 'products'
       }
     }
 

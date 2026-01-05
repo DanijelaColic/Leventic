@@ -23,10 +23,15 @@ export default function ProductsManager() {
       const response = await fetch('/api/admin/products')
       if (response.ok) {
         const data = await response.json()
-        setProducts(data)
+        setProducts(data || [])
+      } else {
+        console.error('Error loading products: HTTP', response.status)
+        const errorData = await response.json().catch(() => ({}))
+        alert(`Greška pri učitavanju proizvoda: ${errorData.error || 'Nepoznata greška'}`)
       }
     } catch (error) {
       console.error('Error loading products:', error)
+      alert(`Greška pri učitavanju proizvoda: ${error instanceof Error ? error.message : 'Nepoznata greška'}`)
     } finally {
       setLoading(false)
     }
@@ -141,57 +146,85 @@ export default function ProductsManager() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {products.map((product) => (
-              <tr key={product.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <span className="text-2xl mr-3">{product.emoji}</span>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <div className="text-sm font-medium text-gray-900">
-                          {product.name}
-                        </div>
-                        {product.available === false && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-                            Nedostupan
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {product.description.substring(0, 50)}...
-                      </div>
-                    </div>
+            {products.length === 0 ? (
+              <tr>
+                <td colSpan={3} className="px-6 py-12 text-center text-gray-500">
+                  <div className="flex flex-col items-center">
+                    <svg
+                      className="w-12 h-12 text-gray-400 mb-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+                      />
+                    </svg>
+                    <p className="text-lg font-medium">Nema proizvoda</p>
+                    <p className="text-sm mt-1">
+                      Kliknite na "Dodaj proizvod" da dodate prvi proizvod
+                    </p>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  €{product.price.toFixed(2)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button
-                    onClick={() => handlePreview(product)}
-                    className="text-green-600 hover:text-green-900 mr-4"
-                    title="Pregled proizvoda"
-                  >
-                    Pregled
-                  </button>
-                  <button
-                    onClick={() => {
-                      setEditingProduct(product)
-                      setShowModal(true)
-                    }}
-                    className="text-blue-600 hover:text-blue-900 mr-4"
-                  >
-                    Uredi
-                  </button>
-                  <button
-                    onClick={() => handleDelete(product.id)}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    Obriši
-                  </button>
-                </td>
               </tr>
-            ))}
+            ) : (
+              products.map((product) => (
+                <tr key={product.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <span className="text-2xl mr-3">{product.emoji}</span>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm font-medium text-gray-900">
+                            {product.name}
+                          </div>
+                          {product.available === false && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                              Nedostupan
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {product.description && product.description.length > 50
+                            ? `${product.description.substring(0, 50)}...`
+                            : product.description || ''}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    €{product.price.toFixed(2)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button
+                      onClick={() => handlePreview(product)}
+                      className="text-green-600 hover:text-green-900 mr-4"
+                      title="Pregled proizvoda"
+                    >
+                      Pregled
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingProduct(product)
+                        setShowModal(true)
+                      }}
+                      className="text-blue-600 hover:text-blue-900 mr-4"
+                    >
+                      Uredi
+                    </button>
+                    <button
+                      onClick={() => handleDelete(product.id)}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      Obriši
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

@@ -1,15 +1,32 @@
 import { createClient } from '@supabase/supabase-js'
 
+// Provjera environment varijabli
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY
+const supabaseServiceRoleKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY
+
+// Provjeri da li su environment varijable postavljene
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('❌ Supabase environment varijable nisu postavljene!')
+  console.error('Provjerite da li imate .env fajl sa:')
+  console.error('- PUBLIC_SUPABASE_URL')
+  console.error('- PUBLIC_SUPABASE_ANON_KEY')
+}
+
+if (!supabaseServiceRoleKey) {
+  console.warn('⚠️ SUPABASE_SERVICE_ROLE_KEY nije postavljen - admin funkcije možda neće raditi!')
+}
+
 // Client-side Supabase client (for browser)
 export const supabase = createClient(
-  import.meta.env.PUBLIC_SUPABASE_URL,
-  import.meta.env.PUBLIC_SUPABASE_ANON_KEY
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseAnonKey || 'placeholder-key'
 )
 
 // Server-side Supabase client (for API routes with service role)
 export const supabaseAdmin = createClient(
-  import.meta.env.PUBLIC_SUPABASE_URL,
-  import.meta.env.SUPABASE_SERVICE_ROLE_KEY
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseServiceRoleKey || 'placeholder-key'
 )
 
 // Database types

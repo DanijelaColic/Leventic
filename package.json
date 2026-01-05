@@ -11,7 +11,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "seed:products": "node --import tsx scripts/seed-products.ts"
+    "seed:products": "node --import tsx scripts/seed-products.ts",
+    "check:env": "node scripts/check-env.js"
   },
   "dependencies": {
     "@astrojs/react": "^4.0.0",
