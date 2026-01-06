@@ -15,6 +15,13 @@ export default function CartAddPopup({
   onViewCart,
   addedItem,
 }: CartAddPopupProps) {
+  const { cart, updateQuantity } = useCart()
+
+  // Pronađi trenutni item u košarici (može se razlikovati od addedItem ako je količina promijenjena)
+  const currentCartItem = addedItem
+    ? cart.find((item) => item.product.id === addedItem.product.id) || addedItem
+    : null
+
   useEffect(() => {
     if (isVisible && addedItem) {
       console.log('CartAddPopup: Showing popup for', addedItem.product.name)
@@ -22,12 +29,22 @@ export default function CartAddPopup({
     }
   }, [isVisible, addedItem])
 
-  if (!isVisible || !addedItem) {
+  if (!isVisible || !addedItem || !currentCartItem) {
     console.log('CartAddPopup: Not rendering - isVisible:', isVisible, 'addedItem:', addedItem)
     return null
   }
 
   console.log('CartAddPopup: Rendering popup')
+
+  const handleIncreaseQuantity = () => {
+    updateQuantity(currentCartItem.product.id, currentCartItem.quantity + 1)
+  }
+
+  const handleDecreaseQuantity = () => {
+    if (currentCartItem.quantity > 1) {
+      updateQuantity(currentCartItem.product.id, currentCartItem.quantity - 1)
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-[100] pointer-events-none">
@@ -84,20 +101,44 @@ export default function CartAddPopup({
           <div className="flex items-center gap-4 mb-6 pb-6 border-b">
             <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gradient-to-b from-primary-50 to-white p-1 border border-gray-100">
               <img
-                src={addedItem.product.image}
-                alt={addedItem.product.name}
+                src={currentCartItem.product.image}
+                alt={currentCartItem.product.name}
                 className="w-full h-full object-contain"
               />
             </div>
             <div className="flex-1 min-w-0">
               <h4 className="font-semibold text-lg text-primary-900 mb-1 truncate">
-                {addedItem.product.name}
+                {currentCartItem.product.name}
               </h4>
-              <p className="text-sm text-gray-600 mb-2">
-                Količina: {addedItem.quantity} {addedItem.product.unit}
-              </p>
+              {/* Količina s +/- gumbovima */}
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-sm text-gray-600">Količina:</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleDecreaseQuantity}
+                    disabled={currentCartItem.quantity <= 1}
+                    className="w-8 h-8 rounded bg-primary-200 text-primary-900 font-semibold hover:bg-primary-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                    aria-label="Smanji količinu"
+                  >
+                    -
+                  </button>
+                  <span className="w-12 text-center font-semibold text-gray-800">
+                    {currentCartItem.quantity}
+                  </span>
+                  <button
+                    onClick={handleIncreaseQuantity}
+                    className="w-8 h-8 rounded bg-primary-200 text-primary-900 font-semibold hover:bg-primary-300 transition-colors flex items-center justify-center"
+                    aria-label="Povećaj količinu"
+                  >
+                    +
+                  </button>
+                  <span className="text-sm text-gray-600 ml-1">
+                    {currentCartItem.product.unit}
+                  </span>
+                </div>
+              </div>
               <p className="text-lg font-bold text-primary-600">
-                {(addedItem.product.price * addedItem.quantity).toFixed(2)} €
+                {(currentCartItem.product.price * currentCartItem.quantity).toFixed(2)} €
               </p>
             </div>
           </div>
