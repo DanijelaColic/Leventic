@@ -67,7 +67,7 @@ export const POST: APIRoute = async ({ request }) => {
     let resendResponse
     try {
       resendResponse = await resend.emails.send({
-        from: 'Eko Leventić Web <onboarding@resend.dev>', // Koristi Resend test domain za sada
+        from: 'Eko Leventić Web <info@eko-leventic.hr>', // Verificirana domena
         to: contactEmail, // Email ide na službeni kontakt
         replyTo: email, // Odgovor ide na email korisnika koji je poslao poruku
         subject: emailSubject,

@@ -33,7 +33,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Pošalji potvrdu narudžbe kupcu
     const customerEmailResult = await resend.emails.send({
-      from: 'Eko Leventić <onboarding@resend.dev>', // Koristi Resend test domain za sada
+      from: 'Eko Leventić <info@eko-leventic.hr>', // Verificirana domena
       to: order.customer.email, // Samo kupac prima potvrdu narudžbe
       subject: `Potvrda narudžbe #${order.id} - Eko Leventić`,
       html: customerEmailHtml,
@@ -47,7 +47,7 @@ export const POST: APIRoute = async ({ request }) => {
     // Pošalji obavijest o novoj narudžbi adminu
     const adminEmail = 'info@eko-leventic.hr'
     const adminEmailResult = await resend.emails.send({
-      from: 'Eko Leventić <onboarding@resend.dev>',
+      from: 'Eko Leventić <info@eko-leventic.hr>', // Verificirana domena
       to: adminEmail, // Admin prima obavijest o novoj narudžbi
       subject: `Nova narudžba #${order.id} - Eko Leventić`,
       html: adminEmailHtml,
