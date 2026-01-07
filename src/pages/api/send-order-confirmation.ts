@@ -83,6 +83,7 @@ function generateEmailHtml(order: any): string {
   const bankDetails = {
     iban: 'HR6225000093120447816',
     recipient: 'Mario Leventić',
+    address: 'Osječka 120, 31431 Čepin',
     model: 'HR00',
     paymentDeadline: 7, // dani
     contactEmail: 'info@eko-leventic.hr',
@@ -171,6 +172,7 @@ function generateEmailHtml(order: any): string {
 
     <div style="margin: 15px 0; padding: 15px; background-color: #f8fafc; border-radius: 6px;">
       <p style="margin: 0;"><strong>Primatelj:</strong> ${bankDetails.recipient}</p>
+      <p style="margin: 5px 0 0 0; color: #4b5563;">${bankDetails.address}</p>
     </div>
 
     <div style="background-color: white; padding: 15px; border-radius: 6px; margin: 15px 0; border: 2px solid #10b981;">

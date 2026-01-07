@@ -73,6 +73,7 @@ export default function OrderConfirmation({ orderId }: OrderConfirmationProps) {
   const bankDetails = {
     iban: 'HR6225000093120447816',
     recipient: 'Mario Leventić',
+    address: 'Osječka 120, 31431 Čepin',
     model: 'HR00',
     paymentDeadline: 7, // dani
     contactEmail: 'info@eko-leventic.hr',
@@ -226,6 +227,7 @@ export default function OrderConfirmation({ orderId }: OrderConfirmationProps) {
             <div className="bg-gray-50 rounded-lg p-3">
               <p className="text-sm text-gray-600 mb-1">Primatelj</p>
               <p className="font-semibold text-lg">{bankDetails.recipient}</p>
+              <p className="text-sm text-gray-700 mt-1">{bankDetails.address}</p>
             </div>
 
             <div className="bg-white rounded-lg p-4 border-2 border-green-300">
