@@ -71,7 +71,15 @@ export default function ProductDetailModal({
     }
   }, [isOpen, product])
 
-  if (!isOpen || !product) return null
+  // Debug log
+  useEffect(() => {
+    console.log('ProductDetailModal: isOpen =', isOpen, 'product =', product?.id, product?.name)
+  }, [isOpen, product])
+
+  if (!isOpen || !product) {
+    console.log('ProductDetailModal: Not rendering - isOpen:', isOpen, 'product:', product)
+    return null
+  }
 
   const formatText = (text?: string) => {
     if (!text) return null

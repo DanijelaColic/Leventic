@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useCart } from '../context/CartContext'
 import { products as staticProducts } from '../data/products'
 import type { Product } from '../data/products'
 import ProductDetailModal from './ProductDetailModal'
 
 export default function ProductList() {
-  const { addToCart, shouldOpenCart } = useCart()
+  const { addToCart, shouldOpenCart, setShouldOpenCart } = useCart()
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [products, setProducts] = useState<Product[]>(staticProducts)
@@ -62,15 +62,30 @@ export default function ProductList() {
   console.log('ProductList: Rendering with', products.length, 'products')
 
   // Zatvori ProductDetailModal kada se otvara košarica
+  // Ali samo ako je modal već otvoren - ne sprječavaj otvaranje modala
+  // Također, resetiraj shouldOpenCart flag kada se modal otvori da se izbjegne zatvaranje
   useEffect(() => {
     if (shouldOpenCart && isModalOpen) {
+      console.log('ProductList: Closing modal because cart is opening')
       setIsModalOpen(false)
       setSelectedProduct(null)
+      setShouldOpenCart(false) // Reset flag nakon zatvaranja modala
     }
-  }, [shouldOpenCart, isModalOpen])
+  }, [shouldOpenCart, isModalOpen, setShouldOpenCart])
+  
+  // Resetiraj shouldOpenCart flag kada se modal otvori da se izbjegne zatvaranje
+  useEffect(() => {
+    if (isModalOpen && shouldOpenCart) {
+      console.log('ProductList: Modal opened but shouldOpenCart is true, resetting flag')
+      setShouldOpenCart(false)
+    }
+  }, [isModalOpen, shouldOpenCart, setShouldOpenCart])
 
   // Auto-otvori proizvod ako je proslijeđen preko URL parametra
+  // Čeka da se proizvodi učitaju prije provjere URL parametra
   useEffect(() => {
+    if (loading) return // Čekaj da se proizvodi učitaju
+    
     const urlParams = new URLSearchParams(window.location.search)
     const productId = urlParams.get('product')
     if (productId) {
@@ -82,12 +97,27 @@ export default function ProductList() {
         window.history.replaceState({}, '', '/shop')
       }
     }
-  }, [])
+  }, [products, loading])
 
-  const handleProductClick = (product: Product) => {
-    setSelectedProduct(product)
-    setIsModalOpen(true)
-  }
+  const handleProductClick = useCallback((product: Product) => {
+    console.log('ProductList: handleProductClick called', product.id, product.name)
+    if (!product) {
+      console.error('ProductList: handleProductClick - product is null')
+      return
+    }
+    console.log('ProductList: Setting selectedProduct and opening modal')
+    // Resetiraj shouldOpenCart flag prije otvaranja modala da se izbjegne zatvaranje
+    setShouldOpenCart(false)
+    // Koristi funkcijski update da se osigura da se state ažurira ispravno
+    setSelectedProduct(() => product)
+    setIsModalOpen(() => true)
+    console.log('ProductList: State updated - selectedProduct:', product.id, 'isModalOpen: true')
+  }, [setShouldOpenCart])
+  
+  // Debug log za praćenje state promjena
+  useEffect(() => {
+    console.log('ProductList: State changed - isModalOpen:', isModalOpen, 'selectedProduct:', selectedProduct?.id, selectedProduct?.name)
+  }, [isModalOpen, selectedProduct])
 
   const handleCloseModal = () => {
     setIsModalOpen(false)
@@ -161,14 +191,23 @@ export default function ProductList() {
             <div
               className="h-64 bg-gradient-to-b from-primary-50 to-white relative overflow-hidden flex items-center justify-center cursor-pointer border-b border-gray-100 p-4"
               onClick={() => handleProductClick(product)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  handleProductClick(product)
+                }
+              }}
+              aria-label={`Pogledaj detalje o ${product.name}`}
             >
               <img
                 src={product.image}
                 alt={product.name}
-                className="max-w-full max-h-full object-contain drop-shadow-md hover:scale-105 transition-transform duration-300"
+                className="max-w-full max-h-full object-contain drop-shadow-md hover:scale-105 transition-transform duration-300 pointer-events-none"
                 loading="lazy"
               />
-              <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-full w-12 h-12 flex items-center justify-center text-2xl shadow-md">
+              <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-full w-12 h-12 flex items-center justify-center text-2xl shadow-md pointer-events-none">
                 {product.emoji}
               </div>
             </div>
@@ -177,6 +216,15 @@ export default function ProductList() {
                 <h2
                   className="text-2xl font-bold text-primary-900 cursor-pointer hover:text-primary-700 transition-colors"
                   onClick={() => handleProductClick(product)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      handleProductClick(product)
+                    }
+                  }}
+                  aria-label={`Pogledaj detalje o ${product.name}`}
                 >
                   {product.name}
                 </h2>

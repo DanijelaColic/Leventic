@@ -184,7 +184,8 @@ export default function CookieConsent() {
                 </div>
                 <p className="text-sm text-gray-700 mt-2">
                   Ovi kolačići su potrebni za osnovno funkcioniranje web stranice i ne mogu 
-                  se isključiti. Uključuju kolačiće za autentifikaciju i sigurnost.
+                  se isključiti. Uključuju kolačiće za autentifikaciju, sigurnost, košaricu i 
+                  narudžbe (potrebni za proces kupnje).
                 </p>
               </div>
 
@@ -208,13 +209,13 @@ export default function CookieConsent() {
                   </label>
                 </div>
                 <p className="text-sm text-gray-700 mt-2">
-                  Ovi kolačići omogućavaju web stranici da zapamti vaše odluke (npr. košarica, 
-                  preferencije) i pružaju poboljšanu funkcionalnost.
+                  Ovi kolačići omogućavaju web stranici da zapamti vaše preferencije i pružaju 
+                  poboljšanu funkcionalnost (npr. jezik, tema, postavke prikaza).
                 </p>
-                <ul className="text-sm text-gray-600 mt-2 list-disc list-inside space-y-1">
-                  <li>Košarica - zapamćivanje proizvoda u košarici</li>
-                  <li>Narudžbe - zapamćivanje informacija o narudžbama</li>
-                </ul>
+                <p className="text-xs text-gray-500 mt-2 italic">
+                  Napomena: Košarica i narudžbe rade i sa samo nužnim kolačićima jer su esencijalne 
+                  za proces kupnje.
+                </p>
               </div>
 
               {/* Info */}

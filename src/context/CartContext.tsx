@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { products, type Product } from '../data/products'
 import { parseWeight } from '../utils/shipping'
-import { hasFunctionalCookieConsent } from '../components/CookieConsent'
+// Košarica ne koristi cookie consent provjeru jer je esencijalna funkcionalnost za kupnju
 
 export interface CartItem {
   product: Product
@@ -27,9 +27,28 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
 
+// Funkcija za učitavanje košarice iz localStorage-a (izvan komponente da se ne poziva više puta)
+function loadCartFromStorage(): CartItem[] {
+  try {
+    const savedCart = localStorage.getItem('eko-leventic-cart')
+    if (savedCart) {
+      return JSON.parse(savedCart)
+    }
+  } catch (e) {
+    console.error('Error loading cart from localStorage', e)
+  }
+  return []
+}
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
   console.log('CartProvider: Initializing')
-  const [cart, setCart] = useState<CartItem[]>([])
+  // Učitaj košaricu iz localStorage-a prije inicijalizacije state-a
+  // Ovo osigurava da se košarica ne resetira kada se CartProvider re-renderira
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    const loaded = loadCartFromStorage()
+    console.log('CartProvider: Loading cart from storage', { cartLength: loaded.length })
+    return loaded
+  })
   const [shouldOpenCart, setShouldOpenCart] = useState(false)
   const [lastAddedItem, setLastAddedItem] = useState<CartItem | null>(null)
   const [showAddPopup, setShowAddPopup] = useState(false)
@@ -38,37 +57,70 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   
   console.log('CartProvider: State initialized', { cartLength: cart.length })
 
-  // Load cart from localStorage on mount
+  // Sinkroniziraj košaricu s localStorage-om prije nego što se komponenta re-renderira
+  // Ovo osigurava da se košarica ne resetira kada se CartProvider re-kreira
   useEffect(() => {
-    // Provjeri pristanak prije učitavanja
-    if (!hasFunctionalCookieConsent()) {
-      isInitialMount.current = false
-      return
+    const savedCart = loadCartFromStorage()
+    if (savedCart.length > 0 && cart.length === 0) {
+      console.log('CartProvider: Restoring cart from storage', { savedCartLength: savedCart.length })
+      setCart(savedCart)
     }
-
-    const savedCart = localStorage.getItem('eko-leventic-cart')
-    if (savedCart) {
-      try {
-        const parsed = JSON.parse(savedCart)
-        setCart(parsed)
-        isInitialMount.current = false
-      } catch (e) {
-        console.error('Error loading cart from localStorage', e)
-        isInitialMount.current = false
-      }
-    } else {
-      isInitialMount.current = false
-    }
+    isInitialMount.current = false
   }, [])
 
   // Save cart to localStorage whenever it changes
   useEffect(() => {
-    // Provjeri pristanak prije spremanja
-    if (!hasFunctionalCookieConsent()) {
-      return
+    // Košarica je esencijalna funkcionalnost za kupnju - radi uvijek, bez obzira na cookie consent
+    // Ovo je potrebno jer korisnik mora moći dodati proizvode u košaricu prije nego što prihvati kolačiće
+    // Spremi samo ako nije prazna košarica (izbjegni spremanje prazne košarice pri inicijalizaciji)
+    if (cart.length > 0 || localStorage.getItem('eko-leventic-cart')) {
+      localStorage.setItem('eko-leventic-cart', JSON.stringify(cart))
     }
-    
-    localStorage.setItem('eko-leventic-cart', JSON.stringify(cart))
+  }, [cart])
+
+  // Slušaj promjene u localStorage-u da se sinkronizira košarica između različitih CartProvider instanci
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'eko-leventic-cart' && e.newValue) {
+        try {
+          const newCart = JSON.parse(e.newValue)
+          // Ažuriraj košaricu samo ako je drugačija
+          if (JSON.stringify(newCart) !== JSON.stringify(cart)) {
+            setCart(newCart)
+          }
+        } catch (error) {
+          console.error('Error parsing cart from storage event', error)
+        }
+      }
+    }
+
+    // Slušaj storage events (promjene iz drugih tabova/prozora)
+    window.addEventListener('storage', handleStorageChange)
+
+    // Polling za promjene u istom prozoru (storage event se ne okida u istom prozoru)
+    // Ovo je potrebno jer ShopPage ima svoj CartProvider, a CartButton koristi AppWrapper-ov CartProvider
+    const interval = setInterval(() => {
+      try {
+        const savedCart = localStorage.getItem('eko-leventic-cart')
+        if (savedCart) {
+          const parsedCart = JSON.parse(savedCart)
+          // Provjeri je li se košarica promijenila
+          if (JSON.stringify(parsedCart) !== JSON.stringify(cart)) {
+            setCart(parsedCart)
+          }
+        } else if (cart.length > 0) {
+          // Ako je localStorage prazan ali košarica nije, možda je netko drugi ispraznio
+          setCart([])
+        }
+      } catch (error) {
+        // Ignore errors
+      }
+    }, 300) // Provjeri svakih 300ms
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      clearInterval(interval)
+    }
   }, [cart])
 
   // Detektiraj kada se doda novi proizvod

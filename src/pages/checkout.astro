@@ -1,21 +1,9 @@
 ---
+import Layout from '../layouts/Layout.astro'
 import CheckoutPage from '../components/CheckoutPage'
-import Footer from '../components/Footer.astro'
-import '../styles/globals.css'
 ---
 
-<!doctype html>
-<html lang="hr">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="description" content="Checkout - Eko Leventić" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/png" href="/Eco_Leventic_Logo.png" />
-    <title>Checkout - Eko Leventić</title>
-  </head>
-  <body>
-    <CheckoutPage client:only="react" />
-    <Footer />
-  </body>
-</html>
+<Layout title="Checkout - Eko Leventić" description="Checkout - Eko Leventić">
+  <CheckoutPage client:only="react" />
+</Layout>
 

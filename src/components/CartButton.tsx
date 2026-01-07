@@ -20,6 +20,21 @@ export default function CartButton() {
     }
   }, [shouldOpenCart, isCartOpen, setShouldOpenCart])
 
+  // Slušaj custom event za otvaranje košarice iz drugih CartProvider instanci (npr. ShopPage)
+  useEffect(() => {
+    const handleOpenCart = () => {
+      console.log('CartButton: Received openCart event')
+      if (!isCartOpen) {
+        setIsCartOpen(true)
+      }
+    }
+
+    window.addEventListener('openCart', handleOpenCart)
+    return () => {
+      window.removeEventListener('openCart', handleOpenCart)
+    }
+  }, [isCartOpen])
+
   const handleClose = () => {
     setIsCartOpen(false)
     setShouldOpenCart(false) // Reset flag kada se zatvori
