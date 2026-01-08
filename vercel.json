@@ -1,0 +1,45 @@
+{
+  "redirects": [
+    {
+      "source": "/eko-integralno-pirovo-brasno",
+      "destination": "/shop",
+      "permanent": true
+    },
+    {
+      "source": "/eko-integralno-pirovo-brasno/",
+      "destination": "/shop",
+      "permanent": true
+    },
+    {
+      "source": "/cijena",
+      "destination": "/shop",
+      "permanent": true
+    },
+    {
+      "source": "/cijena/",
+      "destination": "/shop",
+      "permanent": true
+    },
+    {
+      "source": "/narudzba",
+      "destination": "/shop",
+      "permanent": true
+    },
+    {
+      "source": "/narudzba/",
+      "destination": "/shop",
+      "permanent": true
+    },
+    {
+      "source": "/eko-bijelo-pirovo-brasno",
+      "destination": "/shop",
+      "permanent": true
+    },
+    {
+      "source": "/eko-bijelo-pirovo-brasno/",
+      "destination": "/shop",
+      "permanent": true
+    }
+  ]
+}
+
