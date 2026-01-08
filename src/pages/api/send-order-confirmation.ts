@@ -199,6 +199,12 @@ function generateEmailHtml(order: any): string {
     <p style="margin: 0; font-size: 14px; color: #7f1d1d;">Molimo izvršite uplatu u roku <strong>${bankDetails.paymentDeadline} dana</strong> (do datuma navedenog gore), inače narudžba će biti automatski otkazana.</p>
   </div>
 
+  <div style="background-color: #dbeafe; border: 2px solid #3b82f6; border-radius: 8px; padding: 20px; margin: 20px 0;">
+    <p style="margin: 0; font-size: 15px; color: #1e40af; line-height: 1.6;">
+      Kako bismo Vam robu poslali u najkraćem mogućem roku, molimo da nam potvrdu o plaćanju dostavite na e-mail <strong><a href="mailto:info@eko-leventic.hr" style="color: #1e40af; text-decoration: underline;">info@eko-leventic.hr</a></strong>
+    </p>
+  </div>
+
   <div style="background-color: #f3f4f6; border-radius: 8px; padding: 15px; margin: 20px 0;">
     <p style="margin: 0 0 10px 0; font-weight: bold;">Kontakt za probleme s uplatom:</p>
     <p style="margin: 5px 0;">Email: <a href="mailto:${bankDetails.contactEmail}" style="color: #2563eb;">${bankDetails.contactEmail}</a></p>

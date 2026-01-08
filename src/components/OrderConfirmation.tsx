@@ -279,6 +279,20 @@ export default function OrderConfirmation({ orderId }: OrderConfirmationProps) {
                 U suprotnom, narudžba će biti automatski otkazana.
               </p>
             </div>
+
+            <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4 mt-4">
+              <p className="text-sm text-blue-900 leading-relaxed">
+                Kako bismo Vam robu poslali u najkraćem mogućem roku, molimo da nam potvrdu o plaćanju dostavite na e-mail{' '}
+                <strong>
+                  <a
+                    href="mailto:info@eko-leventic.hr"
+                    className="text-blue-700 hover:text-blue-800 underline"
+                  >
+                    info@eko-leventic.hr
+                  </a>
+                </strong>
+              </p>
+            </div>
           </div>
 
           <div className="mt-6 bg-gray-50 rounded-lg p-4">
