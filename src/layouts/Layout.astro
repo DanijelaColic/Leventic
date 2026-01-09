@@ -17,7 +17,7 @@ const currentUrl = new URL(Astro.url.pathname, siteUrl).href
 // Koristi optimiziranu Open Graph sliku (Facebook zahtijeva minimalno 600x315px, idealno 1200x630px)
 const ogImage = image 
   ? (image.startsWith('http') ? image : `${siteUrl}${image}`)
-  : `${siteUrl}/og-image.jpg`
+  : `${siteUrl}/facebook.jpg`
 ---
 
 <!doctype html>
@@ -29,6 +29,9 @@ const ogImage = image
     <link rel="icon" type="image/png" href="/Eco_Leventic_Logo.png" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href={currentUrl} />
 
     <!-- Open Graph / Facebook / Instagram / LinkedIn / WhatsApp -->
     <meta property="og:type" content="website" />
@@ -43,6 +46,8 @@ const ogImage = image
     <meta property="og:image:alt" content="Eko Leventić - Ekološki proizvodi" />
     <meta property="og:site_name" content="Eko Leventić" />
     <meta property="og:locale" content="hr_HR" />
+    <!-- Facebook App ID (opcionalno, ali preporučeno) - dodajte svoj App ID ako ga imate -->
+    <!-- <meta property="fb:app_id" content="YOUR_FACEBOOK_APP_ID" /> -->
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
