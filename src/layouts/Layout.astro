@@ -17,7 +17,7 @@ const currentUrl = new URL(Astro.url.pathname, siteUrl).href
 // Koristi optimiziranu Open Graph sliku (Facebook zahtijeva minimalno 600x315px, idealno 1200x630px)
 const ogImage = image 
   ? (image.startsWith('http') ? image : `${siteUrl}${image}`)
-  : `${siteUrl}/og-image.png`
+  : `${siteUrl}/og-image.jpg`
 ---
 
 <!doctype html>
@@ -37,7 +37,7 @@ const ogImage = image
     <meta property="og:description" content={description} />
     <meta property="og:image" content={ogImage} />
     <meta property="og:image:secure_url" content={ogImage} />
-    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:type" content="image/jpeg" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="Eko Leventić - Ekološki proizvodi" />
