@@ -1,4 +1,5 @@
-import { useState, FormEvent, useEffect } from 'react'
+import { useState, useEffect } from 'react'
+import type { FormEvent } from 'react'
 import { useCart } from '../context/CartContext'
 import { calculateShippingSync, calculateShipping } from '../utils/shipping'
 import {
@@ -56,13 +57,23 @@ export default function CheckoutForm({ onOrderComplete }: CheckoutFormProps) {
     city: '',
     postalCode: '',
     country: 'Hrvatska',
+    needsR1Invoice: false,
+    companyName: '',
+    companyOIB: '',
+    companyAddress: '',
+    customerNotes: '',
   })
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    const { name, value, type } = e.target
+    const checked = (e.target as HTMLInputElement).checked
+    
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }))
     // Očisti grešku za ovo polje ako postoji
     if (errors[name]) {
       setErrors((prev) => {
@@ -104,6 +115,18 @@ export default function CheckoutForm({ onOrderComplete }: CheckoutFormProps) {
       }
       if (!formData.country.trim()) {
         newErrors.country = 'Država je obavezna'
+      }
+    }
+
+    // Polja za R1 račun su obavezna ako je checkbox označen
+    if (formData.needsR1Invoice) {
+      if (!formData.companyName.trim()) {
+        newErrors.companyName = 'Naziv tvrtke je obavezan'
+      }
+      if (!formData.companyOIB.trim()) {
+        newErrors.companyOIB = 'OIB je obavezan'
+      } else if (!/^\d{11}$/.test(formData.companyOIB.trim())) {
+        newErrors.companyOIB = 'OIB mora imati točno 11 znamenki'
       }
     }
 
@@ -171,20 +194,46 @@ export default function CheckoutForm({ onOrderComplete }: CheckoutFormProps) {
           customer_address: customerData.address,
           customer_city: customerData.city,
           customer_postal_code: customerData.postalCode,
-          items: cart.map((item) => ({
-            productId: item.product.id,
-            productName: item.product.name,
-            variant: item.selectedWeight || undefined,
-            quantity: item.quantity,
-            price: item.product.price,
-          })),
+          items: cart.map((item) => {
+            // Izvuci varijantu iz product.id (format: "productId-variant" ili samo "productId")
+            const productIdParts = item.product.id.split('-')
+            const variant = productIdParts.length > 1 ? productIdParts[1] : undefined
+            
+            return {
+              productId: productIdParts[0],
+              productName: item.product.name,
+              variant: variant,
+              quantity: item.quantity,
+              price: item.product.price,
+            }
+          }),
           subtotal,
           shipping_cost: shipping,
           total,
           status: 'pending',
-          notes: deliveryMethod === 'pickup' 
-            ? '🏠 OSOBNO PREUZIMANJE' 
-            : `📦 DOSTAVA - Država: ${formData.country}`,
+          notes: (() => {
+            let notes = deliveryMethod === 'pickup' 
+              ? '🏠 OSOBNO PREUZIMANJE' 
+              : `📦 DOSTAVA - Država: ${formData.country}`
+            
+            // Dodaj informacije o R1 računu ako je potreban
+            if (formData.needsR1Invoice) {
+              notes += '\n\n🧾 R1 RAČUN:'
+              notes += `\nNaziv tvrtke: ${formData.companyName}`
+              notes += `\nOIB: ${formData.companyOIB}`
+              if (formData.companyAddress.trim()) {
+                notes += `\nAdresa firme: ${formData.companyAddress}`
+              }
+            }
+            
+            // Dodaj napomene kupca ako postoje
+            if (formData.customerNotes.trim()) {
+              notes += '\n\n📝 NAPOMENE KUPCA:'
+              notes += `\n${formData.customerNotes.trim()}`
+            }
+            
+            return notes
+          })(),
         }
 
         const response = await fetch('/api/admin/orders', {
@@ -305,6 +354,111 @@ export default function CheckoutForm({ onOrderComplete }: CheckoutFormProps) {
                 </label>
               </div>
             </div>
+
+            {/* Checkbox za R1 račun */}
+            <div className="bg-gray-50 rounded-lg p-4">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="needsR1Invoice"
+                  checked={formData.needsR1Invoice}
+                  onChange={handleChange}
+                  className="w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  Potrebam R1 račun
+                </span>
+              </label>
+            </div>
+
+            {/* Polja za R1 račun - prikazuju se samo ako je checkbox označen */}
+            {formData.needsR1Invoice && (
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 space-y-4">
+                <div className="flex items-start gap-2">
+                  <span className="text-xl">🧾</span>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-blue-900 mb-1">
+                      Podaci za R1 račun
+                    </h3>
+                    <p className="text-sm text-blue-700">
+                      Unesite podatke tvrtke za izdavanje R1 računa
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="companyName"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Naziv tvrtke/pravne osobe *
+                  </label>
+                  <input
+                    type="text"
+                    id="companyName"
+                    name="companyName"
+                    value={formData.companyName}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                      errors.companyName ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="Npr. OPG Ime Prezime d.o.o."
+                  />
+                  {errors.companyName && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.companyName}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="companyOIB"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    OIB *
+                  </label>
+                  <input
+                    type="text"
+                    id="companyOIB"
+                    name="companyOIB"
+                    value={formData.companyOIB}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                      errors.companyOIB ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="12345678901"
+                    maxLength={11}
+                  />
+                  {errors.companyOIB && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.companyOIB}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="companyAddress"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Adresa firme
+                    <span className="text-xs text-gray-500 ml-2">
+                      (opcionalno, ako je drugačija od adrese dostave)
+                    </span>
+                  </label>
+                  <input
+                    type="text"
+                    id="companyAddress"
+                    name="companyAddress"
+                    value={formData.companyAddress}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    placeholder="Ulica i broj, grad"
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -526,6 +680,26 @@ export default function CheckoutForm({ onOrderComplete }: CheckoutFormProps) {
                 </div>
               </div>
             )}
+
+            {/* Polje za dodatne napomene */}
+            <div>
+              <label
+                htmlFor="customerNotes"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Dodatne napomene
+                <span className="text-xs text-gray-500 ml-2">(opcionalno)</span>
+              </label>
+              <textarea
+                id="customerNotes"
+                name="customerNotes"
+                value={formData.customerNotes}
+                onChange={handleChange}
+                rows={3}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                placeholder="Npr. posebne upute za dostavu, kontakt prije dostave, hitna narudžba, itd."
+              />
+            </div>
 
             <button
               type="submit"
