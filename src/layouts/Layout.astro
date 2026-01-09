@@ -14,9 +14,10 @@ const { title, description = 'OPG Mario Leventić - Ekološka proizvodnja žitar
 // Konstruiraj puni URL za trenutnu stranicu
 const siteUrl = 'https://eko-leventic.hr'
 const currentUrl = new URL(Astro.url.pathname, siteUrl).href
+// Koristi reprezentativnu sliku proizvoda za Open Graph (Facebook zahtijeva minimalno 600x315px, idealno 1200x630px)
 const ogImage = image 
   ? (image.startsWith('http') ? image : `${siteUrl}${image}`)
-  : `${siteUrl}/Eco_Leventic_Logo.png`
+  : `${siteUrl}/Eko_bijelo_pirovo_brasno_1kg.jpg`
 ---
 
 <!doctype html>
@@ -36,8 +37,10 @@ const ogImage = image
     <meta property="og:description" content={description} />
     <meta property="og:image" content={ogImage} />
     <meta property="og:image:secure_url" content={ogImage} />
-    <meta property="og:image:type" content="image/png" />
-    <meta property="og:image:alt" content={`${title} - Eko Leventić`} />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Eko Leventić - Bijelo pirovo brašno 1kg - Ekološki proizvodi" />
     <meta property="og:site_name" content="Eko Leventić" />
     <meta property="og:locale" content="hr_HR" />
 
