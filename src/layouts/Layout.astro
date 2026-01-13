@@ -34,18 +34,23 @@ const ogImage = image
     <link rel="canonical" href={currentUrl} />
 
     <!-- Open Graph / Facebook / Instagram / LinkedIn / WhatsApp -->
+    <!-- VAŽNO: Redoslijed meta tagova je bitan za Facebook parser -->
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Eko Leventić" />
+    <meta property="og:locale" content="hr_HR" />
     <meta property="og:url" content={currentUrl} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
+    <!-- Open Graph Image - Facebook zahtijeva HTTPS URL i javno dostupnu sliku -->
+    <!-- VAŽNO: Slika mora biti javno dostupna preko HTTPS-a i imati minimalno 600x315px -->
     <meta property="og:image" content={ogImage} />
     <meta property="og:image:secure_url" content={ogImage} />
-    <meta property="og:image:type" content="image/jpeg" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="Eko Leventić - Ekološki proizvodi" />
-    <meta property="og:site_name" content="Eko Leventić" />
-    <meta property="og:locale" content="hr_HR" />
+    <!-- Dodatni meta tagovi za bolju kompatibilnost sa različitim platformama -->
+    <meta name="image" content={ogImage} />
+    <meta itemProp="image" content={ogImage} />
     <!-- Facebook App ID (opcionalno, ali preporučeno) - dodajte svoj App ID ako ga imate -->
     <!-- <meta property="fb:app_id" content="YOUR_FACEBOOK_APP_ID" /> -->
 
