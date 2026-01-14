@@ -64,7 +64,7 @@
       ]
     },
     {
-      "source": "/(.*\\.(jpg|jpeg))",
+      "source": "/(.*\\.jpg|.*\\.jpeg)",
       "headers": [
         {
           "key": "Content-Type",
@@ -77,7 +77,7 @@
       ]
     },
     {
-      "source": "/(.*\\.(png))",
+      "source": "/(.*\\.png)",
       "headers": [
         {
           "key": "Content-Type",
