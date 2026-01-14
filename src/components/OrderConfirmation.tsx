@@ -8,6 +8,8 @@ interface OrderConfirmationProps {
 export default function OrderConfirmation({ orderId }: OrderConfirmationProps) {
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
+  const [qrCode, setQrCode] = useState<string | null>(null)
+  const [qrCodeLoading, setQrCodeLoading] = useState(false)
 
   useEffect(() => {
     // OrderID više ne sadrži #, dohvati direktno
@@ -18,8 +20,39 @@ export default function OrderConfirmation({ orderId }: OrderConfirmationProps) {
     // Pošalji email potvrdu kroz Resend API
     if (foundOrder) {
       sendOrderConfirmationEmail(foundOrder)
+      // Generate QR code automatically
+      generateQRCode(foundOrder)
     }
   }, [orderId])
+
+  const generateQRCode = async (order: Order) => {
+    setQrCodeLoading(true)
+    try {
+      const response = await fetch('/api/generate-qr-code', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: order.total,
+          orderId: order.id,
+          firstName: order.customer.firstName,
+          lastName: order.customer.lastName,
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setQrCode(data.qrCode)
+      } else {
+        console.error('Failed to generate QR code')
+      }
+    } catch (error) {
+      console.error('Error generating QR code:', error)
+    } finally {
+      setQrCodeLoading(false)
+    }
+  }
 
   const sendOrderConfirmationEmail = async (order: Order) => {
     try {
@@ -237,6 +270,29 @@ export default function OrderConfirmation({ orderId }: OrderConfirmationProps) {
               </p>
             </div>
 
+            {/* QR Code Display */}
+            {qrCodeLoading ? (
+              <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-6">
+                <p className="text-center text-purple-700">Generiranje QR koda...</p>
+              </div>
+            ) : qrCode ? (
+              <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-6">
+                <p className="text-sm font-bold text-purple-900 mb-3 text-center">
+                  📱 QR kod za plaćanje
+                </p>
+                <div className="flex justify-center mb-3">
+                  <img
+                    src={qrCode}
+                    alt="PDF417 barkod za plaćanje"
+                    className="max-w-full h-auto"
+                  />
+                </div>
+                <p className="text-xs text-center text-purple-800">
+                  Skenirajte ovaj barkod u vašoj mobilnoj aplikaciji za plaćanje
+                </p>
+              </div>
+            ) : null}
+
             <div className="bg-gray-50 rounded-lg p-3 space-y-2">
               <div>
                 <p className="text-sm text-gray-600">Model</p>
@@ -250,19 +306,19 @@ export default function OrderConfirmation({ orderId }: OrderConfirmationProps) {
 
             <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4 mt-6">
               <p className="text-sm font-bold text-yellow-900 mb-3">
-                ⚠️ VAŽNO - Reference/Opis uplate:
+                ⚠️ VAŽNO - Opis uplate:
               </p>
               <div className="bg-white rounded-lg p-4 border-2 border-yellow-400">
-                <p className="font-mono font-bold text-2xl text-yellow-900 text-center tracking-widest">
-                  REF{order.paymentReference}
+                <p className="font-bold text-2xl text-yellow-900 text-center">
+                  {order.customer.firstName} {order.customer.lastName}
                 </p>
               </div>
               <p className="text-sm text-yellow-900 mt-3">
-                U polje <strong>opis/reference uplate</strong> obavezno napišite:{' '}
-                <span className="font-mono font-bold">REF{order.paymentReference}</span>
+                U polje <strong>opis uplate</strong> molimo unesite:{' '}
+                <span className="font-bold">{order.customer.firstName} {order.customer.lastName}</span>
               </p>
               <p className="text-xs text-yellow-800 mt-2">
-                Ovo je broj vaše narudžbe i omogućit će nam da brzo identificiramo vašu uplatu.
+                Ovo je ime i prezime naručitelja i omogućit će nam da brzo identificiramo vašu uplatu.
               </p>
             </div>
 
@@ -293,6 +349,7 @@ export default function OrderConfirmation({ orderId }: OrderConfirmationProps) {
                 </strong>
               </p>
             </div>
+
           </div>
 
           <div className="mt-6 bg-gray-50 rounded-lg p-4">

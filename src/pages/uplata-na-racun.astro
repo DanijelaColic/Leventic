@@ -1,0 +1,247 @@
+---
+export const prerender = false;
+import Layout from '../layouts/Layout.astro';
+import AppWrapper from '../components/AppWrapper';
+import { supabaseAdmin } from '../lib/supabase';
+import { generatePDF417 } from '../lib/barcodeUtils';
+import type { DbOrder } from '../lib/supabase';
+
+// Get order_id from URL
+const orderId = Astro.url.searchParams.get('order_id') || Astro.url.searchParams.get('orderId');
+
+// Get current year for reference number
+const currentYear = new Date().getFullYear();
+
+// Bank account details
+const bankDetails = {
+  recipientName: 'Mario Leventić',
+  recipientAddress1: 'Osječka 120',
+  recipientAddress2: '31431 Čepin',
+  iban: 'HR6225000093120447816',
+  currency: 'EUR',
+};
+
+// Fetch order details from Supabase
+let order: DbOrder | null = null;
+let barcodeData: string | null = null;
+let errorMessage: string | null = null;
+
+if (orderId) {
+  try {
+    // Try to find order by order_number (format: ORD-{orderNumber})
+    // First try with ORD- prefix
+    const { data: orderData1, error: error1 } = await supabaseAdmin
+      .from('orders')
+      .select('*')
+      .eq('order_number', `ORD-${orderId}`)
+      .single();
+
+    if (!error1 && orderData1) {
+      order = orderData1;
+    } else {
+      // Try without ORD- prefix
+      const { data: orderData2, error: error2 } = await supabaseAdmin
+        .from('orders')
+        .select('*')
+        .eq('order_number', orderId)
+        .single();
+
+      if (!error2 && orderData2) {
+        order = orderData2;
+      } else {
+        // Try by UUID id
+        const { data: orderData3, error: error3 } = await supabaseAdmin
+          .from('orders')
+          .select('*')
+          .eq('id', orderId)
+          .single();
+
+        if (!error3 && orderData3) {
+          order = orderData3;
+        }
+      }
+    }
+
+    // If order found, generate barcode
+    if (order) {
+      // Extract first and last name from customer_name
+      const nameParts = order.customer_name.trim().split(/\s+/);
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      // Extract order number without ORD- prefix for reference
+      const orderNumberForReference = order.order_number.replace(/^ORD-/, '');
+
+      // Generate barcode data
+      barcodeData = await generatePDF417(
+        {
+          amount: order.total,
+          orderId: orderNumberForReference,
+          userMeta: {
+            ime: firstName,
+            prezime: lastName,
+          },
+        },
+        bankDetails,
+      );
+    } else {
+      errorMessage = 'Narudžba nije pronađena u bazi podataka. Molimo provjerite broj narudžbe ili kontaktirajte podršku.';
+    }
+  } catch (err) {
+    console.error('Error fetching order:', err);
+    errorMessage = 'Došlo je do greške pri dohvaćanju narudžbe.';
+  }
+} else {
+  errorMessage = 'Broj narudžbe nije naveden.';
+}
+
+// Extract order number without ORD- prefix for display
+const displayOrderNumber = order?.order_number.replace(/^ORD-/, '') || orderId || '';
+---
+
+<Layout title="Uplata na Račun">
+  <AppWrapper client:load>
+    <div class="max-w-4xl mx-auto mt-8 px-4">
+      <div class="p-6 bg-white rounded-lg shadow-lg">
+        <h1 class="mb-6 text-3xl font-bold text-purple-600">Uplata na Račun</h1>
+
+        {errorMessage ? (
+          <div class="mb-8 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p class="text-red-800 mb-4 font-semibold">{errorMessage}</p>
+            <p class="text-sm text-red-700 mb-4">
+              Ako ste upravo napravili narudžbu, QR kod se automatski prikazuje na stranici potvrde narudžbe.
+            </p>
+            <div class="flex gap-4">
+              <a
+                href="/shop"
+                class="inline-block text-primary-600 hover:text-primary-700 underline"
+              >
+                Povratak na shop
+              </a>
+              {orderId && (
+                <a
+                  href={`/order-confirmation?orderId=${orderId}`}
+                  class="inline-block text-primary-600 hover:text-primary-700 underline"
+                >
+                  Povratak na potvrdu narudžbe
+                </a>
+              )}
+            </div>
+          </div>
+        ) : order ? (
+          <>
+            <div class="mb-8">
+              <p class="mb-4 text-lg">
+                Uplatite prema uputama koje su poslane na Vaš email. Nakon uplate
+                i potvrde, unesite podatke za izdavanje računa koji će biti
+                poslan na Vašu email adresu.
+              </p>
+
+              {barcodeData && (
+                <div class="mb-8 p-4 bg-white rounded-lg border border-purple-400">
+                  <div class="flex justify-center">
+                    <img
+                      src={barcodeData}
+                      alt="PDF417 barkod za plaćanje"
+                      class="max-w-full h-auto"
+                    />
+                  </div>
+                  <p class="mt-2 text-sm text-center text-gray-600">
+                    Skenirajte ovaj barkod u vašoj mobilnoj aplikaciji za
+                    plaćanje
+                  </p>
+                </div>
+              )}
+
+              {/* Additional payment details */}
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-gray-50 rounded-lg">
+                <div class="p-4 bg-white rounded-lg shadow-sm">
+                  <p class="text-sm text-gray-600 mb-1">Status narudžbe:</p>
+                  <span
+                    class={`inline-flex rounded-full px-3 py-1 text-sm font-medium ${
+                      order.status === 'delivered'
+                        ? 'bg-green-100 text-green-800'
+                        : order.status === 'shipped'
+                          ? 'bg-blue-100 text-blue-800'
+                          : order.status === 'processing'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : order.status === 'cancelled'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-gray-100 text-gray-800'
+                    }`}
+                  >
+                    {order.status === 'delivered'
+                      ? 'Dostavljeno'
+                      : order.status === 'shipped'
+                        ? 'Poslano'
+                        : order.status === 'processing'
+                          ? 'U obradi'
+                          : order.status === 'cancelled'
+                            ? 'Otkazano'
+                            : 'Na čekanju'}
+                  </span>
+                </div>
+
+                <div class="p-4 bg-white rounded-lg shadow-sm">
+                  <p class="text-sm text-gray-600 mb-1">Broj narudžbe:</p>
+                  <p class="text-lg font-semibold text-purple-600">
+                    #{displayOrderNumber}
+                  </p>
+                </div>
+
+                <div class="p-4 bg-white rounded-lg shadow-sm">
+                  <p class="text-sm text-gray-600 mb-1">Primatelj:</p>
+                  <p class="font-medium text-gray-900">
+                    {bankDetails.recipientName}
+                  </p>
+                </div>
+
+                <div class="p-4 bg-white rounded-lg shadow-sm">
+                  <p class="text-sm text-gray-600 mb-1">IBAN:</p>
+                  <p class="font-mono text-base bg-gray-50 p-2 rounded border border-gray-200 select-all">
+                    {bankDetails.iban}
+                  </p>
+                </div>
+
+                <div class="p-4 bg-white rounded-lg shadow-sm">
+                  <p class="text-sm text-gray-600 mb-1">
+                    Model i poziv na broj:
+                  </p>
+                  <div class="flex gap-2 items-center">
+                    <span
+                      class="font-mono bg-gray-50 px-2 py-1 rounded border border-gray-200"
+                    >
+                      00
+                    </span>
+                    <span
+                      class="font-mono bg-gray-50 px-2 py-1 rounded border border-gray-200 select-all"
+                    >
+                      0-{currentYear}-{displayOrderNumber}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="p-4 bg-white rounded-lg shadow-sm">
+                  <p class="text-sm text-gray-600 mb-1">Iznos:</p>
+                  <p class="text-lg font-bold text-green-600">
+                    {order.total.toFixed(2)} EUR
+                  </p>
+                </div>
+
+                <div class="md:col-span-2 p-4 bg-white rounded-lg shadow-sm">
+                  <p class="text-sm text-gray-600 mb-1">Svrha uplate:</p>
+                  <p class="font-medium text-gray-900">
+                    {order.items
+                      .map((item) => item.productName)
+                      .join(', ')}{' '}
+                    - {order.customer_name}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </>
+        ) : null}
+      </div>
+    </div>
+  </AppWrapper>
+</Layout>
