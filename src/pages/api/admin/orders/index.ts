@@ -57,27 +57,46 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     const order = await request.json()
 
-    // Generiraj order number
-    const orderNumber = `ORD-${Date.now()}`
-    order.order_number = orderNumber
+    // Ako order_number već postoji, koristi ga; inače generiraj novi
+    if (!order.order_number) {
+      const orderNumber = `ORD-${Date.now()}`
+      order.order_number = orderNumber
+    }
+
+    console.log('[API] Saving order to Supabase:', {
+      order_number: order.order_number,
+      customer_email: order.customer_email,
+      total: order.total,
+    })
 
     const { data, error } = await supabaseAdmin
       .from('orders')
       .insert([order])
       .select()
 
-    if (error) throw error
+    if (error) {
+      console.error('[API] Supabase error:', error)
+      throw error
+    }
+
+    console.log('[API] Order successfully saved to Supabase:', data[0]?.id)
 
     return new Response(JSON.stringify(data[0]), {
       status: 201,
       headers: { 'Content-Type': 'application/json' },
     })
-  } catch (error) {
-    console.error('Error creating order:', error)
-    return new Response(JSON.stringify({ error: 'Failed to create order' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
+  } catch (error: any) {
+    console.error('[API] Error creating order:', error)
+    return new Response(
+      JSON.stringify({
+        error: 'Failed to create order',
+        details: error?.message || 'Unknown error',
+      }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      },
+    )
   }
 }
 

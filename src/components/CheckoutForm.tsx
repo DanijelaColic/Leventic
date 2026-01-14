@@ -243,9 +243,11 @@ export default function CheckoutForm({ onOrderComplete }: CheckoutFormProps) {
         })
 
         if (response.ok) {
-          console.log('✅ Order successfully saved to Supabase')
+          const savedOrder = await response.json()
+          console.log('✅ Order successfully saved to Supabase:', savedOrder.id)
         } else {
-          console.error('❌ Failed to save order to Supabase')
+          const errorData = await response.json()
+          console.error('❌ Failed to save order to Supabase:', errorData)
         }
       } catch (supabaseError) {
         console.error('Error saving to Supabase:', supabaseError)

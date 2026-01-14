@@ -1,60 +1,201 @@
-import { useEffect, useState } from 'react'
-import { getOrderById, type Order } from '../utils/orders'
+import { useEffect, useState, useRef, useCallback } from 'react'
+import { getOrderById, getOrders, type Order } from '../utils/orders'
 
 interface OrderConfirmationProps {
   orderId: string
 }
 
 export default function OrderConfirmation({ orderId }: OrderConfirmationProps) {
+  console.log('[OrderConfirmation] Component rendered with orderId:', orderId)
+  
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
   const [qrCode, setQrCode] = useState<string | null>(null)
   const [qrCodeLoading, setQrCodeLoading] = useState(false)
+  const emailSentRef = useRef(false)
 
   useEffect(() => {
-    // OrderID više ne sadrži #, dohvati direktno
-    const foundOrder = getOrderById(orderId)
-    setOrder(foundOrder)
-    setLoading(false)
+    console.log('[OrderConfirmation] useEffect triggered with orderId:', orderId)
+    const fetchOrder = async () => {
+      // First try to get from localStorage
+      let foundOrder = getOrderById(orderId)
+      let orderWasInLocalStorage = !!foundOrder
+      console.log('[OrderConfirmation] Initial check:', {
+        foundOrder: !!foundOrder,
+        orderWasInLocalStorage,
+        orderId,
+      })
 
-    // Pošalji email potvrdu kroz Resend API
-    if (foundOrder) {
-      sendOrderConfirmationEmail(foundOrder)
-      // Generate QR code automatically
-      generateQRCode(foundOrder)
+      // If not found in localStorage, try to fetch from Supabase
+      if (!foundOrder) {
+        console.log(`[OrderConfirmation] Order not found in localStorage, fetching from API with orderId: ${orderId}`)
+        try {
+          const response = await fetch(`/api/orders/${orderId}`)
+          console.log(`[OrderConfirmation] API response status: ${response.status}`)
+          if (response.ok) {
+            const orderData = await response.json()
+            console.log(`[OrderConfirmation] Order fetched from API:`, orderData)
+            foundOrder = orderData
+            // Save to localStorage for future access
+            if (foundOrder) {
+              const orders = getOrders()
+              // Check if order already exists
+              const existingIndex = orders.findIndex((o) => o.id === foundOrder!.id)
+              if (existingIndex >= 0) {
+                orders[existingIndex] = foundOrder
+              } else {
+                orders.push(foundOrder)
+              }
+              localStorage.setItem('eko-leventic-orders', JSON.stringify(orders))
+            }
+          } else {
+            const errorData = await response.json()
+            console.error(`[OrderConfirmation] API error:`, {
+              status: response.status,
+              error: errorData,
+              orderId,
+            })
+          }
+        } catch (error) {
+          console.error('[OrderConfirmation] Error fetching order from API:', error)
+        }
+      } else {
+        console.log(`[OrderConfirmation] Order found in localStorage:`, foundOrder)
+      }
+
+      setOrder(foundOrder)
+      setLoading(false)
+
+      // Pošalji email potvrdu kroz Resend API (only if order was just created, not from email link)
+      // Skip email sending if order was fetched from API (already sent)
+      console.log('[OrderConfirmation] Checking email conditions:', {
+        foundOrder: !!foundOrder,
+        orderWasInLocalStorage,
+        orderId: foundOrder?.id,
+        emailSentRef: emailSentRef.current,
+      })
+
+      if (foundOrder && orderWasInLocalStorage && !emailSentRef.current) {
+        // Only send email if order exists in localStorage (new order)
+        // Don't send if fetched from API (user clicked email link)
+        // Don't send if already sent (prevent duplicate emails)
+        console.log('[OrderConfirmation] Sending order confirmation email for new order:', foundOrder.id)
+        emailSentRef.current = true
+        sendOrderConfirmationEmail(foundOrder).catch((error) => {
+          console.error('[OrderConfirmation] Error in sendOrderConfirmationEmail:', error)
+          emailSentRef.current = false // Reset on error so it can be retried
+        })
+      } else if (foundOrder && !orderWasInLocalStorage) {
+        console.log('[OrderConfirmation] Skipping email - order was fetched from API (already sent)')
+      } else if (emailSentRef.current) {
+        console.log('[OrderConfirmation] Skipping email - already sent for this order')
+      } else {
+        console.log('[OrderConfirmation] No order found, cannot send email', {
+          foundOrder: !!foundOrder,
+          orderWasInLocalStorage,
+        })
+      }
+
+      // Note: QR code generation will happen in separate useEffect when order state is set
     }
+
+    fetchOrder()
   }, [orderId])
 
+  // Separate useEffect to generate QR code when order is loaded
+  // This ensures QR code is generated AFTER order state is set, whether from localStorage or API
+  useEffect(() => {
+    if (order && !qrCode && !qrCodeLoading) {
+      console.log('[OrderConfirmation] Order loaded in state, generating QR code:', {
+        orderId: order.id,
+        total: order.total,
+        firstName: order.customer.firstName,
+        lastName: order.customer.lastName,
+      })
+      // Ensure we have all required data before generating QR code
+      if (
+        order.total &&
+        order.id &&
+        order.customer.firstName &&
+        order.customer.lastName
+      ) {
+        generateQRCode(order)
+      } else {
+        console.error('[OrderConfirmation] Missing required data for QR code generation:', {
+          total: order.total,
+          id: order.id,
+          firstName: order.customer.firstName,
+          lastName: order.customer.lastName,
+        })
+      }
+    } else if (order && qrCode) {
+      console.log('[OrderConfirmation] QR code already exists, skipping generation')
+    } else if (!order) {
+      console.log('[OrderConfirmation] Order not loaded yet, waiting...')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [order, qrCode, qrCodeLoading]) // Generate QR code whenever order changes
+
   const generateQRCode = async (order: Order) => {
+    console.log('[generateQRCode] Starting QR code generation for order:', order.id)
     setQrCodeLoading(true)
     try {
+      // Validate required fields before making request
+      if (!order.total || !order.id || !order.customer.firstName || !order.customer.lastName) {
+        console.error('[generateQRCode] Missing required fields:', {
+          total: order.total,
+          id: order.id,
+          firstName: order.customer.firstName,
+          lastName: order.customer.lastName,
+        })
+        setQrCodeLoading(false)
+        return
+      }
+
+      const requestBody = {
+        amount: order.total,
+        orderId: order.id,
+        firstName: order.customer.firstName.trim(),
+        lastName: order.customer.lastName.trim(),
+      }
+      console.log('[generateQRCode] Request body:', requestBody)
+      
       const response = await fetch('/api/generate-qr-code', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          amount: order.total,
-          orderId: order.id,
-          firstName: order.customer.firstName,
-          lastName: order.customer.lastName,
-        }),
+        body: JSON.stringify(requestBody),
       })
+
+      console.log('[generateQRCode] Response status:', response.status)
 
       if (response.ok) {
         const data = await response.json()
-        setQrCode(data.qrCode)
+        console.log('[generateQRCode] QR code received, length:', data.qrCode?.length || 0)
+        if (data.qrCode) {
+          setQrCode(data.qrCode)
+          console.log('[generateQRCode] QR code set in state successfully')
+        } else {
+          console.error('[generateQRCode] QR code data is missing in response:', data)
+        }
       } else {
-        console.error('Failed to generate QR code')
+        const errorData = await response.json().catch(() => ({ error: 'Failed to parse error response' }))
+        console.error('[generateQRCode] Failed to generate QR code:', {
+          status: response.status,
+          error: errorData,
+        })
       }
     } catch (error) {
-      console.error('Error generating QR code:', error)
+      console.error('[generateQRCode] Error generating QR code:', error)
     } finally {
       setQrCodeLoading(false)
+      console.log('[generateQRCode] QR code loading finished')
     }
   }
 
   const sendOrderConfirmationEmail = async (order: Order) => {
+    console.log('[sendOrderConfirmationEmail] Starting email send for order:', order.id)
     try {
       const response = await fetch('/api/send-order-confirmation', {
         method: 'POST',
@@ -64,16 +205,18 @@ export default function OrderConfirmation({ orderId }: OrderConfirmationProps) {
         body: JSON.stringify(order),
       })
 
+      console.log('[sendOrderConfirmationEmail] Response status:', response.status)
+
       if (!response.ok) {
         const error = await response.json()
-        console.error('Failed to send email:', error)
+        console.error('[sendOrderConfirmationEmail] Failed to send email:', error)
         // Ne prikazuj grešku korisniku, samo logiraj
       } else {
         const result = await response.json()
-        console.log('Email sent successfully:', result)
+        console.log('[sendOrderConfirmationEmail] Email sent successfully:', result)
       }
     } catch (error) {
-      console.error('Error sending email:', error)
+      console.error('[sendOrderConfirmationEmail] Error sending email:', error)
       // Ne prikazuj grešku korisniku, samo logiraj
     }
   }
@@ -285,11 +428,27 @@ export default function OrderConfirmation({ orderId }: OrderConfirmationProps) {
                     src={qrCode}
                     alt="PDF417 barkod za plaćanje"
                     className="max-w-full h-auto"
+                    onError={(e) => {
+                      console.error('[OrderConfirmation] Error loading QR code image:', e)
+                      setQrCode(null)
+                    }}
                   />
                 </div>
                 <p className="text-xs text-center text-purple-800">
                   Skenirajte ovaj barkod u vašoj mobilnoj aplikaciji za plaćanje
                 </p>
+              </div>
+            ) : order && !qrCodeLoading ? (
+              <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
+                <p className="text-sm text-yellow-900 text-center">
+                  QR kod se trenutno ne može prikazati. Molimo koristite podatke za uplatu navedene iznad.
+                </p>
+                <button
+                  onClick={() => order && generateQRCode(order)}
+                  className="mt-2 w-full bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors text-sm font-semibold"
+                >
+                  Pokušaj ponovno generirati QR kod
+                </button>
               </div>
             ) : null}
 

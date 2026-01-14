@@ -1,7 +1,17 @@
 import { Resend } from 'resend'
 import type { APIRoute } from 'astro'
+import { generatePDF417 } from '../../lib/barcodeUtils'
 
 const resend = new Resend(import.meta.env.RESEND_API_KEY)
+
+// Bank account details for QR code generation
+const bankDetails = {
+  recipientName: 'Mario Leventić',
+  recipientAddress1: '',
+  recipientAddress2: '',
+  iban: 'HR6225000093120447816',
+  currency: 'EUR',
+}
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -182,15 +192,24 @@ function generateEmailHtml(order: any): string {
 
     <div style="margin: 15px 0; padding: 15px; background-color: #f8fafc; border-radius: 6px;">
       <p style="margin: 5px 0;"><strong>Model:</strong> ${bankDetails.model}</p>
-      <p style="margin: 5px 0;"><strong>Poziv na broj:</strong> ${order.paymentReference}</p>
+      <p style="margin: 5px 0;"><strong>Poziv na broj:</strong> ${order.id}</p>
     </div>
   </div>
 
+  <div style="background-color: #faf5ff; border: 3px solid #9333ea; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
+    <p style="margin: 0 0 15px 0; font-weight: bold; color: #6b21a8; font-size: 16px;">📱 QR kod za plaćanje</p>
+    <p style="margin: 0 0 15px 0; font-size: 15px; color: #6b21a8;">QR kod za automatsko popunjavanje podataka za plaćanje možete vidjeti na stranici potvrde narudžbe.</p>
+    <div style="margin: 15px 0;">
+      <a href="https://eko-leventic.hr/order-confirmation?orderId=${order.id}" style="display: inline-block; background-color: #9333ea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">Prikaži QR kod za plaćanje</a>
+    </div>
+    <p style="margin: 15px 0 0 0; font-size: 14px; color: #6b21a8;">Kliknite na gumb iznad da otvorite stranicu s QR kodom koji možete skenirati u vašoj mobilnoj aplikaciji za plaćanje.</p>
+  </div>
+
   <div style="background-color: #fef3c7; border: 3px solid #f59e0b; border-radius: 8px; padding: 20px; margin: 20px 0;">
-    <p style="margin: 0 0 10px 0; font-weight: bold; color: #92400e; font-size: 16px;">⚠️ VAŽNO - Reference/Opis uplate:</p>
-    <p style="margin: 5px 0; font-family: monospace; font-size: 22px; font-weight: bold; color: #92400e; background-color: white; padding: 12px; border-radius: 6px; text-align: center; letter-spacing: 2px;">REF${order.paymentReference}</p>
-    <p style="margin: 15px 0 0 0; font-size: 15px; color: #78350f;">U polje <strong>opis/reference uplate</strong> obavezno napišite: <strong style="font-family: monospace;">REF${order.paymentReference}</strong></p>
-    <p style="margin: 10px 0 0 0; font-size: 14px; color: #78350f;">Ovo je broj vaše narudžbe i omogućit će nam da brzo identificiramo vašu uplatu.</p>
+    <p style="margin: 0 0 10px 0; font-weight: bold; color: #92400e; font-size: 16px;">⚠️ VAŽNO - Opis uplate:</p>
+    <p style="margin: 5px 0; font-size: 22px; font-weight: bold; color: #92400e; background-color: white; padding: 12px; border-radius: 6px; text-align: center;">${order.customer.firstName} ${order.customer.lastName}</p>
+    <p style="margin: 15px 0 0 0; font-size: 15px; color: #78350f;">U polje <strong>opis uplate</strong> molimo unesite: <strong>${order.customer.firstName} ${order.customer.lastName}</strong></p>
+    <p style="margin: 10px 0 0 0; font-size: 14px; color: #78350f;">Ovo je ime i prezime naručitelja i omogućit će nam da brzo identificiramo vašu uplatu.</p>
   </div>
 
   <div style="background-color: #fee2e2; border: 3px solid #ef4444; border-radius: 8px; padding: 20px; margin: 20px 0;">

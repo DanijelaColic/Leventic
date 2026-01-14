@@ -15,11 +15,28 @@ export const POST: APIRoute = async ({ request }) => {
     const body = await request.json();
     const { amount, orderId, firstName, lastName } = body;
 
-    // Validate required fields
-    if (!amount || !orderId || !firstName || !lastName) {
+    // Validate required fields - check for empty strings as well
+    if (!amount || amount === 0 || !orderId || !firstName || !lastName || 
+        firstName.trim() === '' || lastName.trim() === '') {
+      console.error('QR Code Generation Validation Failed:', {
+        amount,
+        orderId,
+        firstName,
+        lastName,
+        hasAmount: !!amount,
+        hasOrderId: !!orderId,
+        hasFirstName: !!firstName && firstName.trim() !== '',
+        hasLastName: !!lastName && lastName.trim() !== '',
+      });
       return new Response(
         JSON.stringify({
           error: 'Missing required fields: amount, orderId, firstName, lastName',
+          received: {
+            amount,
+            orderId,
+            firstName,
+            lastName,
+          },
         }),
         {
           status: 400,
