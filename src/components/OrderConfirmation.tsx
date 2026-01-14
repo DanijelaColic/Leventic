@@ -19,16 +19,20 @@ export default function OrderConfirmation({ orderId }: OrderConfirmationProps) {
     const fetchOrder = async () => {
       // First try to get from localStorage
       let foundOrder = getOrderById(orderId)
-      let orderWasInLocalStorage = !!foundOrder
+      const orderWasInLocalStorageBeforeFetch = !!foundOrder
       console.log('[OrderConfirmation] Initial check:', {
         foundOrder: !!foundOrder,
-        orderWasInLocalStorage,
+        orderWasInLocalStorageBeforeFetch,
         orderId,
       })
+
+      // Track if we fetched from API (this means it's an old order, email already sent)
+      let fetchedFromAPI = false
 
       // If not found in localStorage, try to fetch from Supabase
       if (!foundOrder) {
         console.log(`[OrderConfirmation] Order not found in localStorage, fetching from API with orderId: ${orderId}`)
+        fetchedFromAPI = true
         try {
           const response = await fetch(`/api/orders/${orderId}`)
           console.log(`[OrderConfirmation] API response status: ${response.status}`)
@@ -36,7 +40,7 @@ export default function OrderConfirmation({ orderId }: OrderConfirmationProps) {
             const orderData = await response.json()
             console.log(`[OrderConfirmation] Order fetched from API:`, orderData)
             foundOrder = orderData
-            // Save to localStorage for future access
+            // Save to localStorage for future access (but mark that it was fetched from API)
             if (foundOrder) {
               const orders = getOrders()
               // Check if order already exists
@@ -61,38 +65,57 @@ export default function OrderConfirmation({ orderId }: OrderConfirmationProps) {
         }
       } else {
         console.log(`[OrderConfirmation] Order found in localStorage:`, foundOrder)
+        // Check if order is recent (created in last 5 minutes) - if not, it's probably an old order
+        if (foundOrder.createdAt) {
+          const orderDate = new Date(foundOrder.createdAt)
+          const now = new Date()
+          const minutesSinceCreation = (now.getTime() - orderDate.getTime()) / (1000 * 60)
+          console.log(`[OrderConfirmation] Order age: ${minutesSinceCreation.toFixed(2)} minutes`)
+          
+          // If order is older than 5 minutes, treat it as old (email already sent)
+          if (minutesSinceCreation > 5) {
+            console.log('[OrderConfirmation] Order is older than 5 minutes, treating as old order')
+            fetchedFromAPI = true // Treat as fetched from API (email already sent)
+          }
+        }
       }
 
       setOrder(foundOrder)
       setLoading(false)
 
       // Pošalji email potvrdu kroz Resend API (only if order was just created, not from email link)
-      // Skip email sending if order was fetched from API (already sent)
+      // Skip email sending if order was fetched from API (already sent) or is old
       console.log('[OrderConfirmation] Checking email conditions:', {
         foundOrder: !!foundOrder,
-        orderWasInLocalStorage,
+        orderWasInLocalStorageBeforeFetch,
+        fetchedFromAPI,
         orderId: foundOrder?.id,
         emailSentRef: emailSentRef.current,
       })
 
-      if (foundOrder && orderWasInLocalStorage && !emailSentRef.current) {
-        // Only send email if order exists in localStorage (new order)
-        // Don't send if fetched from API (user clicked email link)
-        // Don't send if already sent (prevent duplicate emails)
+      // Only send email if:
+      // 1. Order exists
+      // 2. Order was in localStorage BEFORE we tried to fetch (meaning it's a new order)
+      // 3. Order was NOT fetched from API (meaning it's not an old order)
+      // 4. Email hasn't been sent yet in this session
+      if (foundOrder && orderWasInLocalStorageBeforeFetch && !fetchedFromAPI && !emailSentRef.current) {
+        // Only send email if order exists in localStorage (new order, just created)
+        // Don't send if fetched from API (user clicked email link) or if order is old
         console.log('[OrderConfirmation] Sending order confirmation email for new order:', foundOrder.id)
         emailSentRef.current = true
         sendOrderConfirmationEmail(foundOrder).catch((error) => {
           console.error('[OrderConfirmation] Error in sendOrderConfirmationEmail:', error)
           emailSentRef.current = false // Reset on error so it can be retried
         })
-      } else if (foundOrder && !orderWasInLocalStorage) {
-        console.log('[OrderConfirmation] Skipping email - order was fetched from API (already sent)')
+      } else if (foundOrder && (fetchedFromAPI || !orderWasInLocalStorageBeforeFetch)) {
+        console.log('[OrderConfirmation] Skipping email - order was fetched from API or is old (email already sent)')
       } else if (emailSentRef.current) {
-        console.log('[OrderConfirmation] Skipping email - already sent for this order')
+        console.log('[OrderConfirmation] Skipping email - already sent for this order in this session')
       } else {
         console.log('[OrderConfirmation] No order found, cannot send email', {
           foundOrder: !!foundOrder,
-          orderWasInLocalStorage,
+          orderWasInLocalStorageBeforeFetch,
+          fetchedFromAPI,
         })
       }
 
