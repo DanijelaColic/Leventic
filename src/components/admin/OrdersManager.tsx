@@ -10,9 +10,11 @@ export default function OrdersManager() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState<string>('')
-  const [sortField, setSortField] = useState<SortField>('date')
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
+  const [sortField, setSortField] = useState<SortField>('status')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
   const [selectedOrder, setSelectedOrder] = useState<DbOrder | null>(null)
+  const [currentPage, setCurrentPage] = useState<number>(1)
+  const itemsPerPage = 50
 
   useEffect(() => {
     loadOrders()
@@ -51,6 +53,34 @@ export default function OrdersManager() {
       }
     } catch (error) {
       console.error('Error updating order:', error)
+    }
+  }
+
+  // Brisanje narudžbe
+  const deleteOrder = async (orderId: string) => {
+    if (!confirm('Jeste li sigurni da želite obrisati ovu narudžbu?')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/admin/orders/${orderId}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        await loadOrders()
+        // Resetiraj na prvu stranicu ako je trenutna stranica prazna
+        const totalPages = Math.ceil((processedOrders.length - 1) / itemsPerPage)
+        if (currentPage > totalPages && totalPages > 0) {
+          setCurrentPage(totalPages)
+        }
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        alert(`Greška pri brisanju narudžbe: ${errorData.error || 'Nepoznata greška'}`)
+      }
+    } catch (error) {
+      console.error('Error deleting order:', error)
+      alert(`Greška pri brisanju narudžbe: ${error instanceof Error ? error.message : 'Nepoznata greška'}`)
     }
   }
 
@@ -114,6 +144,17 @@ export default function OrdersManager() {
 
     return result
   })()
+
+  // Paginacija
+  const totalPages = Math.ceil(processedOrders.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedOrders = processedOrders.slice(startIndex, endIndex)
+
+  // Resetiraj stranicu kada se filter ili pretraga promijene
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filter, searchQuery])
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -401,43 +442,88 @@ export default function OrdersManager() {
         </div>
       </div>
 
-      {/* Status statistika */}
+      {/* Status statistika - klikabilna za filtriranje */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
           Narudžbe po statusu
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <div className="text-center">
+          <button
+            onClick={() => setFilter('pending')}
+            className={`text-center p-4 rounded-lg transition cursor-pointer ${
+              filter === 'pending'
+                ? 'bg-yellow-50 border-2 border-yellow-300'
+                : 'hover:bg-gray-50'
+            }`}
+          >
             <p className="text-2xl font-bold text-yellow-600">
               {stats.statusCounts.pending || 0}
             </p>
             <p className="text-sm text-gray-600">Na čekanju</p>
-          </div>
-          <div className="text-center">
+          </button>
+          <button
+            onClick={() => setFilter('processing')}
+            className={`text-center p-4 rounded-lg transition cursor-pointer ${
+              filter === 'processing'
+                ? 'bg-blue-50 border-2 border-blue-300'
+                : 'hover:bg-gray-50'
+            }`}
+          >
             <p className="text-2xl font-bold text-blue-600">
               {stats.statusCounts.processing || 0}
             </p>
             <p className="text-sm text-gray-600">U obradi</p>
-          </div>
-          <div className="text-center">
+          </button>
+          <button
+            onClick={() => setFilter('shipped')}
+            className={`text-center p-4 rounded-lg transition cursor-pointer ${
+              filter === 'shipped'
+                ? 'bg-purple-50 border-2 border-purple-300'
+                : 'hover:bg-gray-50'
+            }`}
+          >
             <p className="text-2xl font-bold text-purple-600">
               {stats.statusCounts.shipped || 0}
             </p>
             <p className="text-sm text-gray-600">Poslano</p>
-          </div>
-          <div className="text-center">
+          </button>
+          <button
+            onClick={() => setFilter('delivered')}
+            className={`text-center p-4 rounded-lg transition cursor-pointer ${
+              filter === 'delivered'
+                ? 'bg-green-50 border-2 border-green-300'
+                : 'hover:bg-gray-50'
+            }`}
+          >
             <p className="text-2xl font-bold text-green-600">
               {stats.statusCounts.delivered || 0}
             </p>
             <p className="text-sm text-gray-600">Dostavljeno</p>
-          </div>
-          <div className="text-center">
+          </button>
+          <button
+            onClick={() => setFilter('cancelled')}
+            className={`text-center p-4 rounded-lg transition cursor-pointer ${
+              filter === 'cancelled'
+                ? 'bg-red-50 border-2 border-red-300'
+                : 'hover:bg-gray-50'
+            }`}
+          >
             <p className="text-2xl font-bold text-red-600">
               {stats.statusCounts.cancelled || 0}
             </p>
             <p className="text-sm text-gray-600">Otkazano</p>
-          </div>
+          </button>
         </div>
+        {filter !== 'all' && (
+          <div className="mt-4 flex justify-center">
+            <button
+              onClick={() => setFilter('all')}
+              className="text-sm text-gray-600 hover:text-gray-900 underline"
+            >
+              Prikaži sve narudžbe
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="flex justify-between items-center mb-6">
@@ -564,7 +650,7 @@ export default function OrdersManager() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {processedOrders.map((order) => (
+            {paginatedOrders.map((order) => (
               <tr key={order.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   #{order.order_number}
@@ -585,12 +671,33 @@ export default function OrdersManager() {
                   {getStatusBadge(order.status)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button
-                    onClick={() => setSelectedOrder(order)}
-                    className="text-blue-600 hover:text-blue-900"
-                  >
-                    Detalji
-                  </button>
+                  <div className="flex items-center justify-end gap-3">
+                    <button
+                      onClick={() => setSelectedOrder(order)}
+                      className="text-blue-600 hover:text-blue-900"
+                    >
+                      Detalji
+                    </button>
+                    <button
+                      onClick={() => deleteOrder(order.id)}
+                      className="text-red-600 hover:text-red-900"
+                      title="Obriši narudžbu"
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
+                      </svg>
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -605,6 +712,117 @@ export default function OrdersManager() {
           </div>
         )}
       </div>
+
+      {/* Paginacija */}
+      {totalPages > 1 && (
+        <div className="mt-6 flex items-center justify-between bg-white px-4 py-3 rounded-lg shadow sm:px-6">
+          <div className="flex flex-1 justify-between sm:hidden">
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Prethodna
+            </button>
+            <button
+              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Sljedeća
+            </button>
+          </div>
+          <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm text-gray-700">
+                Prikazuje se{' '}
+                <span className="font-medium">
+                  {startIndex + 1} - {Math.min(endIndex, processedOrders.length)}
+                </span>{' '}
+                od <span className="font-medium">{processedOrders.length}</span>{' '}
+                narudžbi
+              </p>
+            </div>
+            <div>
+              <nav
+                className="isolate inline-flex -space-x-px rounded-md shadow-sm"
+                aria-label="Pagination"
+              >
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span className="sr-only">Prethodna</span>
+                  <svg
+                    className="h-5 w-5"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                  // Prikaži samo prve 3, zadnje 3 i trenutnu stranicu s kontekstom
+                  if (
+                    page === 1 ||
+                    page === totalPages ||
+                    (page >= currentPage - 1 && page <= currentPage + 1)
+                  ) {
+                    return (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+                          page === currentPage
+                            ? 'z-10 bg-green-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600'
+                            : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    )
+                  } else if (page === currentPage - 2 || page === currentPage + 2) {
+                    return (
+                      <span
+                        key={page}
+                        className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300"
+                      >
+                        ...
+                      </span>
+                    )
+                  }
+                  return null
+                })}
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span className="sr-only">Sljedeća</span>
+                  <svg
+                    className="h-5 w-5"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </button>
+              </nav>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal za detalje narudžbe */}
       {selectedOrder && (

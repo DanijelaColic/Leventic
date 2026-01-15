@@ -9,7 +9,7 @@ export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [currentPage, setCurrentPage] = useState<
     'products' | 'orders' | 'settings'
-  >('products')
+  >('orders')
 
   // Provjera autentifikacije prilikom učitavanja
   useEffect(() => {
@@ -26,9 +26,9 @@ export default function AdminDashboard() {
       if (hash === 'products' || hash === 'orders' || hash === 'settings') {
         setCurrentPage(hash)
       } else if (!hash) {
-        // Ako nema hash-a, postavi default na products i dodaj hash u URL
-        setCurrentPage('products')
-        window.location.hash = 'products'
+        // Ako nema hash-a, postavi default na orders i dodaj hash u URL
+        setCurrentPage('orders')
+        window.location.hash = 'orders'
       }
     }
 
@@ -64,7 +64,7 @@ export default function AdminDashboard() {
       case 'settings':
         return <SettingsManager />
       default:
-        return <ProductsManager />
+        return <OrdersManager />
     }
   }
 

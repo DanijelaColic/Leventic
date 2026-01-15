@@ -12,8 +12,8 @@ export default function AdminLayout({
   onLogout,
 }: AdminLayoutProps) {
   const navItems = [
-    { id: 'products', label: 'Proizvodi', icon: '📦' },
     { id: 'orders', label: 'Narudžbe', icon: '🛒' },
+    { id: 'products', label: 'Proizvodi', icon: '📦' },
     { id: 'settings', label: 'Postavke', icon: '⚙️' },
   ]
 
