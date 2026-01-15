@@ -10,8 +10,8 @@ export default function OrdersManager() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState<string>('')
-  const [sortField, setSortField] = useState<SortField>('status')
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
+  const [sortField, setSortField] = useState<SortField>('date')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [selectedOrder, setSelectedOrder] = useState<DbOrder | null>(null)
   const [currentPage, setCurrentPage] = useState<number>(1)
   const itemsPerPage = 50
