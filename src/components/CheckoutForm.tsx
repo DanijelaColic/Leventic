@@ -253,6 +253,28 @@ export default function CheckoutForm({ onOrderComplete }: CheckoutFormProps) {
         console.error('Error saving to Supabase:', supabaseError)
         // Ne zaustavljaj proces ako Supabase ne radi
       }
+
+      // ✅ Pošalji email potvrdu narudžbe SAMO kada se narudžba kreira (ne u OrderConfirmation komponenti)
+      console.log('CheckoutForm: Sending order confirmation email for order:', orderId)
+      try {
+        const emailResponse = await fetch('/api/send-order-confirmation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(order),
+        })
+
+        if (emailResponse.ok) {
+          const emailResult = await emailResponse.json()
+          console.log('✅ Order confirmation email sent successfully:', emailResult)
+        } else {
+          const errorData = await emailResponse.json()
+          console.error('❌ Failed to send order confirmation email:', errorData)
+          // Ne zaustavljaj proces ako email ne uspije
+        }
+      } catch (emailError) {
+        console.error('Error sending order confirmation email:', emailError)
+        // Ne zaustavljaj proces ako email ne uspije
+      }
       
       clearCart()
       console.log('CheckoutForm: Cart cleared, calling onOrderComplete with orderId:', orderId)

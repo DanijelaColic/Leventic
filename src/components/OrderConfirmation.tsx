@@ -12,27 +12,20 @@ export default function OrderConfirmation({ orderId }: OrderConfirmationProps) {
   const [loading, setLoading] = useState(true)
   const [qrCode, setQrCode] = useState<string | null>(null)
   const [qrCodeLoading, setQrCodeLoading] = useState(false)
-  const emailSentRef = useRef(false)
 
   useEffect(() => {
     console.log('[OrderConfirmation] useEffect triggered with orderId:', orderId)
     const fetchOrder = async () => {
       // First try to get from localStorage
       let foundOrder = getOrderById(orderId)
-      const orderWasInLocalStorageBeforeFetch = !!foundOrder
       console.log('[OrderConfirmation] Initial check:', {
         foundOrder: !!foundOrder,
-        orderWasInLocalStorageBeforeFetch,
         orderId,
       })
-
-      // Track if we fetched from API (this means it's an old order, email already sent)
-      let fetchedFromAPI = false
 
       // If not found in localStorage, try to fetch from Supabase
       if (!foundOrder) {
         console.log(`[OrderConfirmation] Order not found in localStorage, fetching from API with orderId: ${orderId}`)
-        fetchedFromAPI = true
         try {
           const response = await fetch(`/api/orders/${orderId}`)
           console.log(`[OrderConfirmation] API response status: ${response.status}`)
@@ -40,7 +33,7 @@ export default function OrderConfirmation({ orderId }: OrderConfirmationProps) {
             const orderData = await response.json()
             console.log(`[OrderConfirmation] Order fetched from API:`, orderData)
             foundOrder = orderData
-            // Save to localStorage for future access (but mark that it was fetched from API)
+            // Save to localStorage for future access
             if (foundOrder) {
               const orders = getOrders()
               // Check if order already exists
@@ -65,54 +58,14 @@ export default function OrderConfirmation({ orderId }: OrderConfirmationProps) {
         }
       } else {
         console.log(`[OrderConfirmation] Order found in localStorage:`, foundOrder)
-        // Order was in localStorage - this is a NEW order (just created)
-        // Email should be sent (unless already sent in this session)
       }
 
       setOrder(foundOrder)
       setLoading(false)
 
-      // Pošalji email potvrdu kroz Resend API (only if order was just created, not from email link)
-      // Skip email sending if order was fetched from API (already sent) or is old
-      console.log('[OrderConfirmation] Checking email conditions:', {
-        foundOrder: !!foundOrder,
-        orderWasInLocalStorageBeforeFetch,
-        fetchedFromAPI,
-        orderId: foundOrder?.id,
-        emailSentRef: emailSentRef.current,
-      })
-
-      // Only send email if:
-      // 1. Order exists
-      // 2. Order was in localStorage BEFORE we tried to fetch (meaning it's a NEW order, just created)
-      // 3. Order was NOT fetched from API (meaning user didn't click email link)
-      // 4. Email hasn't been sent yet in this session
-      // CRITICAL: NEVER send email if fetchedFromAPI = true (user clicked email link)
-      if (foundOrder && orderWasInLocalStorageBeforeFetch && !fetchedFromAPI && !emailSentRef.current) {
-        // Only send email if order exists in localStorage (new order, just created)
-        // NEVER send if fetched from API (user clicked email link) - email already sent
-        console.log('[OrderConfirmation] Sending order confirmation email for new order:', foundOrder.id)
-        emailSentRef.current = true
-        sendOrderConfirmationEmail(foundOrder).catch((error) => {
-          console.error('[OrderConfirmation] Error in sendOrderConfirmationEmail:', error)
-          emailSentRef.current = false // Reset on error so it can be retried
-        })
-      } else if (foundOrder && fetchedFromAPI) {
-        // Order was fetched from API - user clicked email link, email already sent
-        // NEVER send email again in this case, regardless of time
-        console.log('[OrderConfirmation] Skipping email - order was fetched from API (user clicked email link, email already sent)')
-      } else if (foundOrder && !orderWasInLocalStorageBeforeFetch) {
-        // Order was not in localStorage before fetch - shouldn't happen, but skip email to be safe
-        console.log('[OrderConfirmation] Skipping email - order was not in localStorage before fetch')
-      } else if (emailSentRef.current) {
-        console.log('[OrderConfirmation] Skipping email - already sent for this order in this session')
-      } else {
-        console.log('[OrderConfirmation] No order found, cannot send email', {
-          foundOrder: !!foundOrder,
-          orderWasInLocalStorageBeforeFetch,
-          fetchedFromAPI,
-        })
-      }
+      // Email se NE šalje iz ove komponente - šalje se SAMO u checkout procesu kada se narudžba kreira
+      // Ova komponenta samo prikazuje QR kod i detalje narudžbe
+      console.log('[OrderConfirmation] Order loaded, email was already sent during checkout process')
 
       // Note: QR code generation will happen in separate useEffect when order state is set
     }
@@ -212,32 +165,6 @@ export default function OrderConfirmation({ orderId }: OrderConfirmationProps) {
     }
   }
 
-  const sendOrderConfirmationEmail = async (order: Order) => {
-    console.log('[sendOrderConfirmationEmail] Starting email send for order:', order.id)
-    try {
-      const response = await fetch('/api/send-order-confirmation', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(order),
-      })
-
-      console.log('[sendOrderConfirmationEmail] Response status:', response.status)
-
-      if (!response.ok) {
-        const error = await response.json()
-        console.error('[sendOrderConfirmationEmail] Failed to send email:', error)
-        // Ne prikazuj grešku korisniku, samo logiraj
-      } else {
-        const result = await response.json()
-        console.log('[sendOrderConfirmationEmail] Email sent successfully:', result)
-      }
-    } catch (error) {
-      console.error('[sendOrderConfirmationEmail] Error sending email:', error)
-      // Ne prikazuj grešku korisniku, samo logiraj
-    }
-  }
 
   if (loading) {
     return (
