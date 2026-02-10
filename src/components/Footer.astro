@@ -132,12 +132,20 @@ const currentYear = new Date().getFullYear()
       </div>
     </div>
 
-    <!-- Bottom Bar -->
+    <!-- Bottom Bar: lijevo copyright + ENKR, desno OPG info -->
     <div class="border-t border-primary-800 pt-6 flex flex-col md:flex-row justify-between items-center gap-4">
-      <p class="text-primary-300 text-sm">
-        &copy; {currentYear} Eko Leventić. Sva prava pridržana.
+      <p class="text-primary-300 text-sm text-center md:text-left">
+        &copy; {currentYear} Eko Leventić. Sva prava pridržana. | Stranicu izradio:
+        <a
+          href="https://www.enkr.hr/"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="ml-1 underline hover:text-white transition-colors"
+        >
+          ENKR
+        </a>
       </p>
-      <p class="text-primary-400 text-xs">
+      <p class="text-primary-400 text-xs text-center md:text-right">
         OPG Mario Leventić | OIB: 13795127258 | Čepin, Hrvatska
       </p>
     </div>

@@ -379,7 +379,7 @@ export default function CheckoutForm({ onOrderComplete }: CheckoutFormProps) {
               </div>
             </div>
 
-            {/* Checkbox za R1 račun */}
+            {/* Checkbox za R1 račun – tekst ispravljen u "Potreban R1 račun" */}
             <div className="bg-gray-50 rounded-lg p-4">
               <label className="flex items-center gap-3 cursor-pointer">
                 <input
@@ -390,7 +390,7 @@ export default function CheckoutForm({ onOrderComplete }: CheckoutFormProps) {
                   className="w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
                 />
                 <span className="text-sm font-medium text-gray-700">
-                  Potrebam R1 račun
+                  Potreban R1 račun
                 </span>
               </label>
             </div>
