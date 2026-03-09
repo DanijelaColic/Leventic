@@ -285,7 +285,7 @@ function ProductModal({
       name: '',
       description: '',
       price: 0,
-      unit: 'kg',
+      unit: 'kom',
       emoji: '🌾',
       image: '',
       detailed_description: '',
@@ -337,7 +337,7 @@ function ProductModal({
         name: '',
         description: '',
         price: 0,
-        unit: 'kg',
+        unit: 'kom',
         emoji: '🌾',
         image: '',
         detailed_description: '',
@@ -482,7 +482,7 @@ function ProductModal({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Osnovna cijena (€)
@@ -497,6 +497,26 @@ function ProductModal({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   required
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Mjerna jedinica
+                </label>
+                <select
+                  value={formData.unit || 'kom'}
+                  onChange={(e) =>
+                    setFormData({ ...formData, unit: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white"
+                  required
+                >
+                  <option value="kom">kom (komad)</option>
+                  <option value="kg">kg (kilogram)</option>
+                  <option value="g">g (gram)</option>
+                  <option value="l">l (litra)</option>
+                  <option value="ml">ml (mililitar)</option>
+                </select>
               </div>
 
               <div>

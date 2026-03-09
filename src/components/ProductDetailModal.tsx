@@ -130,8 +130,8 @@ export default function ProductDetailModal({
       ? `${product.id}-${selectedVariant}`
       : product.id
     
-    // Spremi informacije o varijanti u localStorage ili koristi poseban format
-    addToCart(productId, quantity)
+    // Proslijedi product objekt da CartContext ne mora tražiti u statičkom nizu (API proizvodi)
+    addToCart(productId, quantity, product)
     
     // Reset
     setQuantity(1)

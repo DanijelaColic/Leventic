@@ -158,11 +158,22 @@ export function calculateShippingSync(totalWeightKg: number): number {
 }
 
 /**
- * Parsira težinu iz stringa (npr. "1kg" -> 1, "5kg" -> 5)
+ * Parsira težinu iz stringa u kilogramima.
+ * Podržava: "1kg" → 1, "5kg" → 5, "400gr" → 0.4, "400g" → 0.4
+ * Fallback: izvuče prvi broj i pretpostavi kg (npr. varijanta "1" → 1)
  */
 export function parseWeight(weight: string): number {
-  const match = weight.match(/(\d+(?:\.\d+)?)/)
-  return match ? parseFloat(match[1]) : 0
+  // Prvo traži kg
+  const kgMatch = weight.match(/(\d+(?:\.\d+)?)\s*kg\b/i)
+  if (kgMatch) return parseFloat(kgMatch[1])
+
+  // Traži grame (g ili gr) — pretvori u kg
+  const gMatch = weight.match(/(\d+(?:\.\d+)?)\s*gr?\b/i)
+  if (gMatch) return parseFloat(gMatch[1]) / 1000
+
+  // Fallback: izvuci prvi broj (pretpostavi kg — za varijante poput "1", "5")
+  const numMatch = weight.match(/(\d+(?:\.\d+)?)/)
+  return numMatch ? parseFloat(numMatch[1]) : 0
 }
 
 

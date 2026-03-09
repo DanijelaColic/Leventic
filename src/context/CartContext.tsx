@@ -10,7 +10,7 @@ export interface CartItem {
 
 interface CartContextType {
   cart: CartItem[]
-  addToCart: (productId: string, quantity: number) => void
+  addToCart: (productId: string, quantity: number, productData?: Product) => void
   removeFromCart: (productId: string) => void
   updateQuantity: (productId: string, quantity: number) => void
   clearCart: () => void
@@ -146,7 +146,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [cart])
 
-  const addToCart = (productId: string, quantity: number) => {
+  const addToCart = (productId: string, quantity: number, productData?: Product) => {
     console.log('CartContext: addToCart called', productId, quantity)
     
     // Provjeri je li productId u formatu "productId-variant" (npr. "1-1kg")
@@ -154,7 +154,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       ? productId.split('-')
       : [productId, null]
 
-    const product = products.find((p) => p.id === baseProductId)
+    // Koristi proslijeđeni product objekt (API proizvodi) ili pronađi u statičkom nizu (fallback)
+    const product = productData || products.find((p) => p.id === baseProductId)
     if (!product) {
       console.log('CartContext: Product not found', baseProductId)
       return

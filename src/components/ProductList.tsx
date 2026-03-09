@@ -25,7 +25,7 @@ export default function ProductList() {
               name: p.name,
               description: p.description,
               price: p.price,
-              unit: p.unit || 'kg',
+              unit: p.unit || 'kom',
               emoji: p.emoji || '🌾',
               image: p.image,
               images: p.images || undefined,
@@ -141,12 +141,12 @@ export default function ProductList() {
     if (product.variants && product.variants.length === 1) {
       // Koristi prvu (i jedinu) varijantu
       const productId = `${product.id}-${product.variants[0].weight}`
-      addToCart(productId, 1)
+      addToCart(productId, 1, product)
       return
     }
 
     // Ako nema varijanti, dodaj direktno u košaricu
-    addToCart(product.id, 1)
+    addToCart(product.id, 1, product)
   }
 
   // Prikaži sve proizvode sortirane po ID-u (željeni redoslijed)
