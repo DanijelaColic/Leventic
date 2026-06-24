@@ -180,11 +180,8 @@ export default function CheckoutForm({ onOrderComplete }: CheckoutFormProps) {
         deliveryMethod,
       }
 
-      // Spremi u localStorage (za backup)
-      saveOrder(order)
-      console.log('CheckoutForm: Order saved to localStorage')
-      
-      // ✅ NOVO: Spremi narudžbu u Supabase
+      // 1. Spremi narudžbu u Supabase (primarni izvor)
+      let orderSavedToDatabase = false
       try {
         const supabaseOrder = {
           order_number: `ORD-${orderNumber}`,
@@ -198,7 +195,7 @@ export default function CheckoutForm({ onOrderComplete }: CheckoutFormProps) {
             // Izvuci varijantu iz product.id (format: "productId-variant" ili samo "productId")
             const productIdParts = item.product.id.split('-')
             const variant = productIdParts.length > 1 ? productIdParts[1] : undefined
-            
+
             return {
               productId: productIdParts[0],
               productName: item.product.name,
@@ -212,11 +209,11 @@ export default function CheckoutForm({ onOrderComplete }: CheckoutFormProps) {
           total,
           status: 'pending',
           notes: (() => {
-            let notes = deliveryMethod === 'pickup' 
-              ? '🏠 OSOBNO PREUZIMANJE' 
-              : `📦 DOSTAVA - Država: ${formData.country}`
-            
-            // Dodaj informacije o R1 računu ako je potreban
+            let notes =
+              deliveryMethod === 'pickup'
+                ? '🏠 OSOBNO PREUZIMANJE'
+                : `📦 DOSTAVA - Država: ${formData.country}`
+
             if (formData.needsR1Invoice) {
               notes += '\n\n🧾 R1 RAČUN:'
               notes += `\nNaziv tvrtke: ${formData.companyName}`
@@ -225,13 +222,12 @@ export default function CheckoutForm({ onOrderComplete }: CheckoutFormProps) {
                 notes += `\nAdresa firme: ${formData.companyAddress}`
               }
             }
-            
-            // Dodaj napomene kupca ako postoje
+
             if (formData.customerNotes.trim()) {
               notes += '\n\n📝 NAPOMENE KUPCA:'
               notes += `\n${formData.customerNotes.trim()}`
             }
-            
+
             return notes
           })(),
         }
@@ -244,17 +240,31 @@ export default function CheckoutForm({ onOrderComplete }: CheckoutFormProps) {
 
         if (response.ok) {
           const savedOrder = await response.json()
+          orderSavedToDatabase = true
           console.log('✅ Order successfully saved to Supabase:', savedOrder.id)
         } else {
-          const errorData = await response.json()
+          const errorData = await response.json().catch(() => ({}))
           console.error('❌ Failed to save order to Supabase:', errorData)
         }
       } catch (supabaseError) {
         console.error('Error saving to Supabase:', supabaseError)
-        // Ne zaustavljaj proces ako Supabase ne radi
       }
 
-      // ✅ Pošalji email potvrdu narudžbe SAMO kada se narudžba kreira (ne u OrderConfirmation komponenti)
+      // 2. Backup u localStorage — ne blokira checkout ako ne uspije
+      const savedLocally = saveOrder(order)
+      if (!savedLocally) {
+        console.warn('CheckoutForm: Could not save order to localStorage (non-critical)')
+      }
+
+      // Narudžba mora biti spremljena barem u Supabase ili localStorage
+      if (!orderSavedToDatabase && !savedLocally) {
+        alert(
+          'Došlo je do greške prilikom kreiranja narudžbe. Molimo pokušajte ponovno ili nas kontaktirajte na info@eko-leventic.hr.',
+        )
+        return
+      }
+
+      // 3. Pošalji email potvrdu (ne blokira checkout)
       console.log('CheckoutForm: Sending order confirmation email for order:', orderId)
       try {
         const emailResponse = await fetch('/api/send-order-confirmation', {
@@ -267,18 +277,20 @@ export default function CheckoutForm({ onOrderComplete }: CheckoutFormProps) {
           const emailResult = await emailResponse.json()
           console.log('✅ Order confirmation email sent successfully:', emailResult)
         } else {
-          const errorData = await emailResponse.json()
+          const errorData = await emailResponse.json().catch(() => ({}))
           console.error('❌ Failed to send order confirmation email:', errorData)
-          // Ne zaustavljaj proces ako email ne uspije
         }
       } catch (emailError) {
         console.error('Error sending order confirmation email:', emailError)
-        // Ne zaustavljaj proces ako email ne uspije
       }
-      
-      clearCart()
-      console.log('CheckoutForm: Cart cleared, calling onOrderComplete with orderId:', orderId)
-      
+
+      try {
+        clearCart()
+      } catch (cartError) {
+        console.warn('Could not clear cart (non-critical):', cartError)
+      }
+
+      console.log('CheckoutForm: Calling onOrderComplete with orderId:', orderId)
       onOrderComplete(orderId)
     } catch (error) {
       console.error('Error creating order:', error)

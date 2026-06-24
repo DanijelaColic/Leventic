@@ -27,10 +27,43 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
 
+const CART_STORAGE_KEY = 'eko-leventic-cart'
+
+/** Spremi samo osnovna polja proizvoda — manji footprint u localStorage */
+function compactCartItem(item: CartItem): CartItem {
+  return {
+    quantity: item.quantity,
+    product: {
+      id: item.product.id,
+      name: item.product.name,
+      description: item.product.description || '',
+      price: item.product.price,
+      unit: item.product.unit || 'kom',
+      emoji: item.product.emoji || '',
+      image: item.product.image || '',
+    },
+  }
+}
+
+function saveCartToStorage(cart: CartItem[]): void {
+  try {
+    if (cart.length > 0) {
+      localStorage.setItem(
+        CART_STORAGE_KEY,
+        JSON.stringify(cart.map(compactCartItem)),
+      )
+    } else if (localStorage.getItem(CART_STORAGE_KEY)) {
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify([]))
+    }
+  } catch (error) {
+    console.warn('Could not save cart to localStorage (non-critical):', error)
+  }
+}
+
 // Funkcija za učitavanje košarice iz localStorage-a (izvan komponente da se ne poziva više puta)
 function loadCartFromStorage(): CartItem[] {
   try {
-    const savedCart = localStorage.getItem('eko-leventic-cart')
+    const savedCart = localStorage.getItem(CART_STORAGE_KEY)
     if (savedCart) {
       return JSON.parse(savedCart)
     }
@@ -70,18 +103,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   // Save cart to localStorage whenever it changes
   useEffect(() => {
-    // Košarica je esencijalna funkcionalnost za kupnju - radi uvijek, bez obzira na cookie consent
-    // Ovo je potrebno jer korisnik mora moći dodati proizvode u košaricu prije nego što prihvati kolačiće
-    // Spremi samo ako nije prazna košarica (izbjegni spremanje prazne košarice pri inicijalizaciji)
-    if (cart.length > 0 || localStorage.getItem('eko-leventic-cart')) {
-      localStorage.setItem('eko-leventic-cart', JSON.stringify(cart))
-    }
+    saveCartToStorage(cart)
   }, [cart])
 
   // Slušaj promjene u localStorage-u da se sinkronizira košarica između različitih CartProvider instanci
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'eko-leventic-cart' && e.newValue) {
+      if (e.key === CART_STORAGE_KEY && e.newValue) {
         try {
           const newCart = JSON.parse(e.newValue)
           // Ažuriraj košaricu samo ako je drugačija
@@ -101,7 +129,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     // Ovo je potrebno jer ShopPage ima svoj CartProvider, a CartButton koristi AppWrapper-ov CartProvider
     const interval = setInterval(() => {
       try {
-        const savedCart = localStorage.getItem('eko-leventic-cart')
+        const savedCart = localStorage.getItem(CART_STORAGE_KEY)
         if (savedCart) {
           const parsedCart = JSON.parse(savedCart)
           // Provjeri je li se košarica promijenila

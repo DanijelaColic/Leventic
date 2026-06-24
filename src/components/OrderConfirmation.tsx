@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { getOrderById, getOrders, type Order } from '../utils/orders'
+import { getOrderById, saveOrder, type Order } from '../utils/orders'
 
 interface OrderConfirmationProps {
   orderId: string
@@ -33,17 +33,9 @@ export default function OrderConfirmation({ orderId }: OrderConfirmationProps) {
             const orderData = await response.json()
             console.log(`[OrderConfirmation] Order fetched from API:`, orderData)
             foundOrder = orderData
-            // Save to localStorage for future access
+            // Backup u localStorage — ne blokira prikaz potvrde
             if (foundOrder) {
-              const orders = getOrders()
-              // Check if order already exists
-              const existingIndex = orders.findIndex((o) => o.id === foundOrder!.id)
-              if (existingIndex >= 0) {
-                orders[existingIndex] = foundOrder
-              } else {
-                orders.push(foundOrder)
-              }
-              localStorage.setItem('eko-leventic-orders', JSON.stringify(orders))
+              saveOrder(foundOrder)
             }
           } else {
             const errorData = await response.json()
