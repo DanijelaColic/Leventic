@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro'
-import { logCheckoutFailure } from '../../../lib/checkoutOrder'
+import { logCheckoutFailure } from '../../lib/checkoutOrder'
 
 /**
  * Klijent poziva kad checkout potpuno ne uspije (npr. mreža + localStorage).

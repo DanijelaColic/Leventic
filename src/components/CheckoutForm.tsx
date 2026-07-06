@@ -8,7 +8,7 @@ import {
   type Order,
   type DeliveryMethod,
 } from '../utils/orders'
-import { parseCartProductId } from '../lib/checkoutOrder'
+import { parseCartProductId } from '../utils/cartProductId'
 
 interface CheckoutFormProps {
   onOrderComplete: (orderId: string) => void
