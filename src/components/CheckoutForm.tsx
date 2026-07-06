@@ -8,6 +8,7 @@ import {
   type Order,
   type DeliveryMethod,
 } from '../utils/orders'
+import { parseCartProductId } from '../lib/checkoutOrder'
 
 interface CheckoutFormProps {
   onOrderComplete: (orderId: string) => void
@@ -100,6 +101,10 @@ export default function CheckoutForm({ onOrderComplete }: CheckoutFormProps) {
     }
     if (!formData.phone.trim()) {
       newErrors.phone = 'Telefon je obavezan'
+    } else if (formData.phone.trim().length < 6) {
+      newErrors.phone = 'Telefon mora imati najmanje 6 znakova'
+    } else if (!/^[\d\s+\-/()]+$/.test(formData.phone.trim())) {
+      newErrors.phone = 'Telefon sadrži nevažeće znakove'
     }
 
     // Adresna polja su obavezna samo za dostavu
@@ -134,6 +139,83 @@ export default function CheckoutForm({ onOrderComplete }: CheckoutFormProps) {
     return Object.keys(newErrors).length === 0
   }
 
+  /** Prijavi neuspjeli checkout serveru (za admin uvid) */
+  const reportCheckoutFailure = async (
+    payload: Record<string, unknown>,
+    errorCode: string,
+    errorMessage: string,
+    errorDetails?: Record<string, unknown>,
+  ) => {
+    try {
+      await fetch('/api/log-checkout-failure', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...payload,
+          error_code: errorCode,
+          error_message: errorMessage,
+          error_details: errorDetails,
+        }),
+      })
+    } catch {
+      // Ne blokiraj korisnika
+    }
+  }
+
+  const buildOrderNotes = (
+    customerData: typeof formData,
+    method: DeliveryMethod,
+  ): string => {
+    let notes =
+      method === 'pickup'
+        ? '🏠 OSOBNO PREUZIMANJE'
+        : `📦 DOSTAVA - Država: ${customerData.country}`
+
+    if (customerData.needsR1Invoice) {
+      notes += '\n\n🧾 R1 RAČUN:'
+      notes += `\nNaziv tvrtke: ${customerData.companyName}`
+      notes += `\nOIB: ${customerData.companyOIB}`
+      if (customerData.companyAddress.trim()) {
+        notes += `\nAdresa firme: ${customerData.companyAddress}`
+      }
+    }
+
+    if (customerData.customerNotes.trim()) {
+      notes += '\n\n📝 NAPOMENE KUPCA:'
+      notes += `\n${customerData.customerNotes.trim()}`
+    }
+
+    return notes
+  }
+
+  const submitOrderToApi = async (
+    supabaseOrder: Record<string, unknown>,
+  ): Promise<{ ok: boolean; error?: string; details?: string; code?: string }> => {
+    try {
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(supabaseOrder),
+      })
+
+      if (response.ok) {
+        return { ok: true }
+      }
+
+      const errorData = await response.json().catch(() => ({}))
+      return {
+        ok: false,
+        error: errorData.error || `HTTP ${response.status}`,
+        details: errorData.details,
+        code: errorData.code,
+      }
+    } catch (networkError) {
+      const message =
+        networkError instanceof Error ? networkError.message : 'Mrežna greška'
+      return { ok: false, error: message, code: 'NETWORK_ERROR' }
+    }
+  }
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
 
@@ -146,25 +228,88 @@ export default function CheckoutForm({ onOrderComplete }: CheckoutFormProps) {
       return
     }
 
+    for (const item of cart) {
+      if (!item.product?.id || !item.product?.name) {
+        alert('Košarica sadrži neispravan proizvod. Molimo osvježite stranicu i pokušajte ponovno.')
+        return
+      }
+      if (!Number.isFinite(item.product.price) || item.product.price < 0) {
+        alert(`Proizvod "${item.product.name}" ima neispravnu cijenu. Uklonite ga iz košarice i dodajte ponovno.`)
+        return
+      }
+      if (!Number.isFinite(item.quantity) || item.quantity < 1) {
+        alert('Košarica sadrži neispravnu količinu. Molimo osvježite stranicu.')
+        return
+      }
+    }
+
+    if (!Number.isFinite(total) || total <= 0) {
+      alert('Ukupan iznos narudžbe nije ispravan. Molimo osvježite stranicu.')
+      return
+    }
+
     setIsSubmitting(true)
 
+    const failurePayload = {
+      customer_email: formData.email.trim(),
+      customer_name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
+      customer_phone: formData.phone.trim(),
+    }
+
     try {
-      const orderNumber = generateOrderNumber()
-      // Ne spremaj # u order ID - dodaj ga samo za display
-      const orderId = orderNumber
-      
+      let orderNumber = generateOrderNumber()
+      let orderId = orderNumber
+
       console.log('CheckoutForm: Creating order with ID:', orderId)
 
-      // Za osobno preuzimanje, koristi adresu preuzimanja u customer podatcima
-      const customerData = deliveryMethod === 'pickup'
-        ? {
-            ...formData,
-            address: PICKUP_ADDRESS.address,
-            city: PICKUP_ADDRESS.city,
-            postalCode: PICKUP_ADDRESS.postalCode,
-            country: 'Hrvatska',
+      const customerData =
+        deliveryMethod === 'pickup'
+          ? {
+              ...formData,
+              firstName: formData.firstName.trim(),
+              lastName: formData.lastName.trim(),
+              email: formData.email.trim().toLowerCase(),
+              phone: formData.phone.trim(),
+              address: PICKUP_ADDRESS.address,
+              city: PICKUP_ADDRESS.city,
+              postalCode: PICKUP_ADDRESS.postalCode,
+              country: 'Hrvatska',
+            }
+          : {
+              ...formData,
+              firstName: formData.firstName.trim(),
+              lastName: formData.lastName.trim(),
+              email: formData.email.trim().toLowerCase(),
+              phone: formData.phone.trim(),
+              address: formData.address.trim(),
+              city: formData.city.trim(),
+              postalCode: formData.postalCode.trim(),
+            }
+
+      const buildSupabaseOrder = (num: string) => ({
+        order_number: `ORD-${num}`,
+        customer_name: `${customerData.firstName} ${customerData.lastName}`,
+        customer_email: customerData.email,
+        customer_phone: customerData.phone,
+        customer_address: customerData.address,
+        customer_city: customerData.city,
+        customer_postal_code: customerData.postalCode,
+        items: cart.map((item) => {
+          const { productId, variant } = parseCartProductId(item.product.id)
+          return {
+            productId,
+            productName: item.product.name,
+            variant,
+            quantity: item.quantity,
+            price: Math.round(item.product.price * 100) / 100,
           }
-        : formData
+        }),
+        subtotal: Math.round(subtotal * 100) / 100,
+        shipping_cost: Math.round(shipping * 100) / 100,
+        total: Math.round(total * 100) / 100,
+        status: 'pending',
+        notes: buildOrderNotes(customerData, deliveryMethod),
+      })
 
       const order: Order = {
         id: orderId,
@@ -180,121 +325,89 @@ export default function CheckoutForm({ onOrderComplete }: CheckoutFormProps) {
         deliveryMethod,
       }
 
-      // 1. Spremi narudžbu u Supabase (primarni izvor)
       let orderSavedToDatabase = false
-      try {
-        const supabaseOrder = {
-          order_number: `ORD-${orderNumber}`,
-          customer_name: `${formData.firstName} ${formData.lastName}`,
-          customer_email: formData.email,
-          customer_phone: formData.phone,
-          customer_address: customerData.address,
-          customer_city: customerData.city,
-          customer_postal_code: customerData.postalCode,
-          items: cart.map((item) => {
-            // Izvuci varijantu iz product.id (format: "productId-variant" ili samo "productId")
-            const productIdParts = item.product.id.split('-')
-            const variant = productIdParts.length > 1 ? productIdParts[1] : undefined
+      let lastApiError: { error?: string; details?: string; code?: string } = {}
 
-            return {
-              productId: productIdParts[0],
-              productName: item.product.name,
-              variant: variant,
-              quantity: item.quantity,
-              price: item.product.price,
-            }
-          }),
-          subtotal,
-          shipping_cost: shipping,
-          total,
-          status: 'pending',
-          notes: (() => {
-            let notes =
-              deliveryMethod === 'pickup'
-                ? '🏠 OSOBNO PREUZIMANJE'
-                : `📦 DOSTAVA - Država: ${formData.country}`
+      let apiResult = await submitOrderToApi(buildSupabaseOrder(orderNumber))
 
-            if (formData.needsR1Invoice) {
-              notes += '\n\n🧾 R1 RAČUN:'
-              notes += `\nNaziv tvrtke: ${formData.companyName}`
-              notes += `\nOIB: ${formData.companyOIB}`
-              if (formData.companyAddress.trim()) {
-                notes += `\nAdresa firme: ${formData.companyAddress}`
-              }
-            }
-
-            if (formData.customerNotes.trim()) {
-              notes += '\n\n📝 NAPOMENE KUPCA:'
-              notes += `\n${formData.customerNotes.trim()}`
-            }
-
-            return notes
-          })(),
-        }
-
-        const response = await fetch('/api/admin/orders', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(supabaseOrder),
-        })
-
-        if (response.ok) {
-          const savedOrder = await response.json()
-          orderSavedToDatabase = true
-          console.log('✅ Order successfully saved to Supabase:', savedOrder.id)
-        } else {
-          const errorData = await response.json().catch(() => ({}))
-          console.error('❌ Failed to save order to Supabase:', errorData)
-        }
-      } catch (supabaseError) {
-        console.error('Error saving to Supabase:', supabaseError)
+      if (!apiResult.ok && apiResult.code === 'DUPLICATE_ORDER') {
+        orderNumber = generateOrderNumber()
+        orderId = orderNumber
+        order.id = orderId
+        order.orderNumber = orderNumber
+        order.paymentReference = orderNumber
+        apiResult = await submitOrderToApi(buildSupabaseOrder(orderNumber))
       }
 
-      // 2. Backup u localStorage — ne blokira checkout ako ne uspije
+      if (apiResult.ok) {
+        orderSavedToDatabase = true
+        console.log('✅ Order successfully saved to database')
+      } else {
+        lastApiError = apiResult
+        console.error('❌ Failed to save order:', apiResult)
+        await reportCheckoutFailure(
+          { ...failurePayload, order_number: `ORD-${orderNumber}` },
+          apiResult.code || 'API_ERROR',
+          apiResult.error || 'API greška',
+          { details: apiResult.details },
+        )
+      }
+
       const savedLocally = saveOrder(order)
       if (!savedLocally) {
         console.warn('CheckoutForm: Could not save order to localStorage (non-critical)')
       }
 
-      // Narudžba mora biti spremljena barem u Supabase ili localStorage
       if (!orderSavedToDatabase && !savedLocally) {
+        await reportCheckoutFailure(
+          {
+            ...failurePayload,
+            order_number: `ORD-${orderNumber}`,
+            request_payload: buildSupabaseOrder(orderNumber),
+          },
+          'CHECKOUT_COMPLETE_FAILURE',
+          'Supabase i localStorage oba nisu uspjeli',
+          { apiError: lastApiError },
+        )
         alert(
-          'Došlo je do greške prilikom kreiranja narudžbe. Molimo pokušajte ponovno ili nas kontaktirajte na info@eko-leventic.hr.',
+          'Došlo je do greške prilikom kreiranja narudžbe. Provjerite internetsku vezu i pokušajte ponovno. Ako problem ostane, kontaktirajte nas na info@eko-leventic.hr.',
         )
         return
       }
 
-      // 3. Pošalji email potvrdu (ne blokira checkout)
-      console.log('CheckoutForm: Sending order confirmation email for order:', orderId)
+      if (!orderSavedToDatabase && savedLocally) {
+        await reportCheckoutFailure(
+          { ...failurePayload, order_number: `ORD-${orderNumber}` },
+          'LOCALSTORAGE_ONLY',
+          'Narudžba spremljena samo lokalno, baza nije uspjela',
+          { apiError: lastApiError },
+        )
+      }
+
       try {
-        const emailResponse = await fetch('/api/send-order-confirmation', {
+        await fetch('/api/send-order-confirmation', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(order),
         })
-
-        if (emailResponse.ok) {
-          const emailResult = await emailResponse.json()
-          console.log('✅ Order confirmation email sent successfully:', emailResult)
-        } else {
-          const errorData = await emailResponse.json().catch(() => ({}))
-          console.error('❌ Failed to send order confirmation email:', errorData)
-        }
       } catch (emailError) {
         console.error('Error sending order confirmation email:', emailError)
       }
 
       try {
         clearCart()
-      } catch (cartError) {
-        console.warn('Could not clear cart (non-critical):', cartError)
+      } catch {
+        // non-critical
       }
 
-      console.log('CheckoutForm: Calling onOrderComplete with orderId:', orderId)
       onOrderComplete(orderId)
     } catch (error) {
       console.error('Error creating order:', error)
-      alert('Došlo je do greške prilikom kreiranja narudžbe. Molimo pokušajte ponovno.')
+      const message = error instanceof Error ? error.message : 'Nepoznata greška'
+      await reportCheckoutFailure(failurePayload, 'UNEXPECTED_ERROR', message)
+      alert(
+        'Došlo je do greške prilikom kreiranja narudžbe. Molimo pokušajte ponovno ili nas kontaktirajte na info@eko-leventic.hr.',
+      )
     } finally {
       setIsSubmitting(false)
     }

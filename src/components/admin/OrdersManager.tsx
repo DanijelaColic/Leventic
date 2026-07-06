@@ -5,8 +5,23 @@ import { jsPDF } from 'jspdf'
 type SortField = 'date' | 'total' | 'status' | 'order_number'
 type SortDirection = 'asc' | 'desc'
 
+type CheckoutFailure = {
+  id: string
+  order_number?: string
+  customer_email?: string
+  customer_name?: string
+  customer_phone?: string
+  error_code: string
+  error_message: string
+  error_details?: Record<string, unknown>
+  user_agent?: string
+  created_at: string
+}
+
 export default function OrdersManager() {
   const [orders, setOrders] = useState<DbOrder[]>([])
+  const [checkoutFailures, setCheckoutFailures] = useState<CheckoutFailure[]>([])
+  const [showFailures, setShowFailures] = useState(false)
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState<string>('')
@@ -18,7 +33,20 @@ export default function OrdersManager() {
 
   useEffect(() => {
     loadOrders()
+    loadCheckoutFailures()
   }, [])
+
+  const loadCheckoutFailures = async () => {
+    try {
+      const response = await fetch('/api/admin/checkout-failures')
+      if (response.ok) {
+        const data = await response.json()
+        setCheckoutFailures(data || [])
+      }
+    } catch (error) {
+      console.error('Error loading checkout failures:', error)
+    }
+  }
 
   const loadOrders = async () => {
     try {
@@ -327,6 +355,69 @@ export default function OrdersManager() {
 
   return (
     <div>
+      {/* Neuspjeli pokušaji checkouta */}
+      {checkoutFailures.length > 0 && (
+        <div className="mb-6 bg-red-50 border-2 border-red-200 rounded-lg overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowFailures(!showFailures)}
+            className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-red-100 transition"
+          >
+            <span className="font-semibold text-red-900">
+              ⚠️ Neuspjeli pokušaji narudžbe ({checkoutFailures.length})
+            </span>
+            <span className="text-red-700 text-sm">{showFailures ? 'Sakrij' : 'Prikaži'}</span>
+          </button>
+          {showFailures && (
+            <div className="border-t border-red-200 max-h-64 overflow-y-auto">
+              <table className="min-w-full text-sm">
+                <thead className="bg-red-100 sticky top-0">
+                  <tr>
+                    <th className="px-3 py-2 text-left text-red-900">Datum</th>
+                    <th className="px-3 py-2 text-left text-red-900">Kupac</th>
+                    <th className="px-3 py-2 text-left text-red-900">Greška</th>
+                    <th className="px-3 py-2 text-left text-red-900">Uređaj</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {checkoutFailures.map((f) => (
+                    <tr key={f.id} className="border-t border-red-100">
+                      <td className="px-3 py-2 whitespace-nowrap text-gray-700">
+                        {new Date(f.created_at).toLocaleString('hr-HR')}
+                      </td>
+                      <td className="px-3 py-2">
+                        <div className="font-medium">{f.customer_name || '—'}</div>
+                        <div className="text-gray-500 text-xs">{f.customer_email}</div>
+                        <div className="text-gray-500 text-xs">{f.customer_phone}</div>
+                      </td>
+                      <td className="px-3 py-2">
+                        <span className="font-mono text-xs bg-red-200 px-1 rounded">
+                          {f.error_code}
+                        </span>
+                        <div className="text-gray-700 mt-1">{f.error_message}</div>
+                      </td>
+                      <td className="px-3 py-2 text-xs text-gray-500 max-w-[120px] truncate">
+                        {f.user_agent?.includes('iPhone')
+                          ? '📱 iPhone'
+                          : f.user_agent?.includes('Android')
+                          ? '📱 Android'
+                          : f.user_agent?.includes('Edg')
+                          ? 'Edge'
+                          : f.user_agent?.includes('Chrome')
+                          ? 'Chrome'
+                          : f.user_agent?.includes('Safari')
+                          ? 'Safari'
+                          : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Statistika */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow p-6">

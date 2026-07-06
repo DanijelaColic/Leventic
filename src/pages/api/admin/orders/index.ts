@@ -1,5 +1,10 @@
 import type { APIRoute } from 'astro'
 import { supabaseAdmin } from '../../../../lib/supabase'
+import {
+  validateCheckoutPayload,
+  createOrderInDatabase,
+  logCheckoutFailure,
+} from '../../../../lib/checkoutOrder'
 
 // GET - Dohvaćanje svih narudžbi
 export const GET: APIRoute = async () => {
@@ -52,36 +57,40 @@ export const GET: APIRoute = async () => {
   }
 }
 
-// POST - Kreiranje nove narudžbe (ovo će se zvati iz checkout-a)
+// POST - Kreiranje nove narudžbe (admin panel — koristi istu logiku kao javni checkout)
 export const POST: APIRoute = async ({ request }) => {
   try {
-    const order = await request.json()
+    const rawBody = await request.json()
+    const validation = validateCheckoutPayload(rawBody)
 
-    // Ako order_number već postoji, koristi ga; inače generiraj novi
+    if (!validation.ok) {
+      return new Response(
+        JSON.stringify({ error: 'Validacija nije prošla', details: validation.errors }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } },
+      )
+    }
+
+    const order = validation.data
     if (!order.order_number) {
-      const orderNumber = `ORD-${Date.now()}`
-      order.order_number = orderNumber
+      order.order_number = `ORD-${Date.now()}`
     }
 
-    console.log('[API] Saving order to Supabase:', {
-      order_number: order.order_number,
-      customer_email: order.customer_email,
-      total: order.total,
-    })
+    const result = await createOrderInDatabase(order)
 
-    const { data, error } = await supabaseAdmin
-      .from('orders')
-      .insert([order])
-      .select()
-
-    if (error) {
-      console.error('[API] Supabase error:', error)
-      throw error
+    if (result.error) {
+      await logCheckoutFailure({
+        order_number: order.order_number,
+        customer_email: order.customer_email,
+        error_code: 'ADMIN_CREATE_FAILED',
+        error_message: result.error,
+      })
+      return new Response(
+        JSON.stringify({ error: 'Failed to create order', details: result.error }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } },
+      )
     }
 
-    console.log('[API] Order successfully saved to Supabase:', data[0]?.id)
-
-    return new Response(JSON.stringify(data[0]), {
+    return new Response(JSON.stringify(result.data), {
       status: 201,
       headers: { 'Content-Type': 'application/json' },
     })
@@ -92,10 +101,7 @@ export const POST: APIRoute = async ({ request }) => {
         error: 'Failed to create order',
         details: error?.message || 'Unknown error',
       }),
-      {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      },
+      { status: 500, headers: { 'Content-Type': 'application/json' } },
     )
   }
 }

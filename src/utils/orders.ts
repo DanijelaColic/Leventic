@@ -57,12 +57,13 @@ export interface Order {
 }
 
 /**
- * Generira jedinstveni broj narudžbe
+ * Generira jedinstveni broj narudžbe (timestamp + random — bez kolizija)
  */
 export function generateOrderNumber(): string {
-  const timestamp = Date.now()
-  const random = Math.floor(Math.random() * 1000)
-  return `${timestamp}${random}`.slice(-8) // Zadnje 8 znamenki
+  const random = Math.floor(Math.random() * 10000)
+    .toString()
+    .padStart(4, '0')
+  return `${Date.now()}${random}`
 }
 
 /**
