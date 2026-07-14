@@ -3,11 +3,11 @@ import type { FormEvent } from 'react'
 import { useCart } from '../context/CartContext'
 import { calculateShippingSync, calculateShipping } from '../utils/shipping'
 import {
-  generateOrderNumber,
   saveOrder,
   type Order,
   type DeliveryMethod,
 } from '../utils/orders'
+import { stripOrderPrefix } from '../utils/orderNumberFormat'
 import { parseCartProductId } from '../utils/cartProductId'
 
 interface CheckoutFormProps {
@@ -190,7 +190,13 @@ export default function CheckoutForm({ onOrderComplete }: CheckoutFormProps) {
 
   const submitOrderToApi = async (
     supabaseOrder: Record<string, unknown>,
-  ): Promise<{ ok: boolean; error?: string; details?: string; code?: string }> => {
+  ): Promise<{
+    ok: boolean
+    error?: string
+    details?: string
+    code?: string
+    data?: { order_number?: string }
+  }> => {
     try {
       const response = await fetch('/api/orders', {
         method: 'POST',
@@ -198,16 +204,17 @@ export default function CheckoutForm({ onOrderComplete }: CheckoutFormProps) {
         body: JSON.stringify(supabaseOrder),
       })
 
+      const responseData = await response.json().catch(() => ({}))
+
       if (response.ok) {
-        return { ok: true }
+        return { ok: true, data: responseData }
       }
 
-      const errorData = await response.json().catch(() => ({}))
       return {
         ok: false,
-        error: errorData.error || `HTTP ${response.status}`,
-        details: errorData.details,
-        code: errorData.code,
+        error: responseData.error || `HTTP ${response.status}`,
+        details: responseData.details,
+        code: responseData.code,
       }
     } catch (networkError) {
       const message =
@@ -257,11 +264,6 @@ export default function CheckoutForm({ onOrderComplete }: CheckoutFormProps) {
     }
 
     try {
-      let orderNumber = generateOrderNumber()
-      let orderId = orderNumber
-
-      console.log('CheckoutForm: Creating order with ID:', orderId)
-
       const customerData =
         deliveryMethod === 'pickup'
           ? {
@@ -286,8 +288,7 @@ export default function CheckoutForm({ onOrderComplete }: CheckoutFormProps) {
               postalCode: formData.postalCode.trim(),
             }
 
-      const buildSupabaseOrder = (num: string) => ({
-        order_number: `ORD-${num}`,
+      const buildSupabaseOrder = () => ({
         customer_name: `${customerData.firstName} ${customerData.lastName}`,
         customer_email: customerData.email,
         customer_phone: customerData.phone,
@@ -311,59 +312,55 @@ export default function CheckoutForm({ onOrderComplete }: CheckoutFormProps) {
         notes: buildOrderNotes(customerData, deliveryMethod),
       })
 
-      const order: Order = {
-        id: orderId,
-        orderNumber,
-        customer: customerData,
-        items: [...cart],
-        subtotal,
-        shipping,
-        total,
-        status: 'pending_payment',
-        createdAt: new Date().toISOString(),
-        paymentReference: orderNumber,
-        deliveryMethod,
-      }
-
       let orderSavedToDatabase = false
       let lastApiError: { error?: string; details?: string; code?: string } = {}
+      let orderNumber = ''
 
-      let apiResult = await submitOrderToApi(buildSupabaseOrder(orderNumber))
+      let apiResult = await submitOrderToApi(buildSupabaseOrder())
 
       if (!apiResult.ok && apiResult.code === 'DUPLICATE_ORDER') {
-        orderNumber = generateOrderNumber()
-        orderId = orderNumber
-        order.id = orderId
-        order.orderNumber = orderNumber
-        order.paymentReference = orderNumber
-        apiResult = await submitOrderToApi(buildSupabaseOrder(orderNumber))
+        apiResult = await submitOrderToApi(buildSupabaseOrder())
       }
 
-      if (apiResult.ok) {
+      if (apiResult.ok && apiResult.data?.order_number) {
+        orderNumber = stripOrderPrefix(apiResult.data.order_number)
         orderSavedToDatabase = true
-        console.log('✅ Order successfully saved to database')
+        console.log('✅ Order successfully saved to database:', orderNumber)
       } else {
         lastApiError = apiResult
         console.error('❌ Failed to save order:', apiResult)
         await reportCheckoutFailure(
-          { ...failurePayload, order_number: `ORD-${orderNumber}` },
+          failurePayload,
           apiResult.code || 'API_ERROR',
           apiResult.error || 'API greška',
           { details: apiResult.details },
         )
       }
 
-      const savedLocally = saveOrder(order)
-      if (!savedLocally) {
+      const order: Order = {
+        id: orderNumber,
+        orderNumber,
+        customer: customerData,
+        items: [...cart],
+        subtotal: Math.round(subtotal * 100) / 100,
+        shipping: Math.round(shipping * 100) / 100,
+        total: Math.round(total * 100) / 100,
+        status: 'pending_payment',
+        createdAt: new Date().toISOString(),
+        paymentReference: orderNumber,
+        deliveryMethod,
+      }
+
+      const savedLocally = orderNumber ? saveOrder(order) : false
+      if (orderNumber && !savedLocally) {
         console.warn('CheckoutForm: Could not save order to localStorage (non-critical)')
       }
 
-      if (!orderSavedToDatabase && !savedLocally) {
+      if (!orderSavedToDatabase) {
         await reportCheckoutFailure(
           {
             ...failurePayload,
-            order_number: `ORD-${orderNumber}`,
-            request_payload: buildSupabaseOrder(orderNumber),
+            request_payload: buildSupabaseOrder(),
           },
           'CHECKOUT_COMPLETE_FAILURE',
           'Supabase i localStorage oba nisu uspjeli',
@@ -373,15 +370,6 @@ export default function CheckoutForm({ onOrderComplete }: CheckoutFormProps) {
           'Došlo je do greške prilikom kreiranja narudžbe. Provjerite internetsku vezu i pokušajte ponovno. Ako problem ostane, kontaktirajte nas na info@eko-leventic.hr.',
         )
         return
-      }
-
-      if (!orderSavedToDatabase && savedLocally) {
-        await reportCheckoutFailure(
-          { ...failurePayload, order_number: `ORD-${orderNumber}` },
-          'LOCALSTORAGE_ONLY',
-          'Narudžba spremljena samo lokalno, baza nije uspjela',
-          { apiError: lastApiError },
-        )
       }
 
       try {
@@ -400,7 +388,7 @@ export default function CheckoutForm({ onOrderComplete }: CheckoutFormProps) {
         // non-critical
       }
 
-      onOrderComplete(orderId)
+      onOrderComplete(orderNumber)
     } catch (error) {
       console.error('Error creating order:', error)
       const message = error instanceof Error ? error.message : 'Nepoznata greška'

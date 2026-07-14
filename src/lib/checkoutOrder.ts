@@ -1,4 +1,5 @@
 import { supabaseAdmin } from './supabase'
+import { generateOrderNumber, toDbOrderNumber } from './orderNumber'
 
 export { parseCartProductId } from '../utils/cartProductId'
 
@@ -11,7 +12,7 @@ export type CheckoutOrderItem = {
 }
 
 export type CheckoutOrderPayload = {
-  order_number: string
+  order_number?: string
   customer_name: string
   customer_email: string
   customer_phone: string
@@ -60,7 +61,9 @@ export function validateCheckoutPayload(
 
   const body = raw as Record<string, unknown>
 
-  const order_number = sanitizeText(body.order_number, MAX_ORDER_NUMBER)
+  const order_number = body.order_number
+    ? sanitizeText(body.order_number, MAX_ORDER_NUMBER)
+    : ''
   const customer_name = sanitizeText(body.customer_name, MAX_NAME * 2)
   const customer_email = sanitizeText(body.customer_email, MAX_EMAIL).toLowerCase()
   const customer_phone = sanitizeText(body.customer_phone, MAX_PHONE)
@@ -69,7 +72,6 @@ export function validateCheckoutPayload(
   const customer_postal_code = sanitizeText(body.customer_postal_code, MAX_POSTAL)
   const notes = body.notes ? sanitizeText(body.notes, MAX_NOTES) : undefined
 
-  if (!order_number) errors.push('Broj narudžbe je obavezan')
   if (!customer_name || customer_name.length < 2) {
     errors.push('Ime i prezime su obavezni')
   }
@@ -149,7 +151,7 @@ export function validateCheckoutPayload(
   return {
     ok: true,
     data: {
-      order_number,
+      ...(order_number ? { order_number } : {}),
       customer_name,
       customer_email,
       customer_phone,
@@ -169,32 +171,55 @@ export function validateCheckoutPayload(
 export async function createOrderInDatabase(
   order: CheckoutOrderPayload,
 ): Promise<{ data: unknown; error: null } | { data: null; error: string }> {
-  const { data, error } = await supabaseAdmin
-    .from('orders')
-    .insert([order])
-    .select()
-    .single()
+  const maxAttempts = 3
 
-  if (error) {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const orderToInsert = { ...order }
+
+    if (!orderToInsert.order_number) {
+      const shortNumber = await generateOrderNumber()
+      orderToInsert.order_number = toDbOrderNumber(shortNumber)
+    } else if (!orderToInsert.order_number.startsWith('ORD-')) {
+      orderToInsert.order_number = toDbOrderNumber(orderToInsert.order_number)
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('orders')
+      .insert([orderToInsert])
+      .select()
+      .single()
+
+    if (!error) {
+      console.log('[checkoutOrder] Order saved:', {
+        id: (data as { id?: string })?.id,
+        order_number: orderToInsert.order_number,
+        customer_email: order.customer_email,
+        total: order.total,
+      })
+      return { data, error: null }
+    }
+
+    const isDuplicate =
+      error.message.includes('duplicate') ||
+      error.message.includes('unique')
+
     console.error('[checkoutOrder] Supabase insert error:', {
+      attempt: attempt + 1,
       code: error.code,
       message: error.message,
-      details: error.details,
-      hint: error.hint,
-      order_number: order.order_number,
+      order_number: orderToInsert.order_number,
       customer_email: order.customer_email,
     })
+
+    if (isDuplicate && attempt < maxAttempts - 1) {
+      order.order_number = undefined
+      continue
+    }
+
     return { data: null, error: error.message }
   }
 
-  console.log('[checkoutOrder] Order saved:', {
-    id: (data as { id?: string })?.id,
-    order_number: order.order_number,
-    customer_email: order.customer_email,
-    total: order.total,
-  })
-
-  return { data, error: null }
+  return { data: null, error: 'Narudžba nije spremljena nakon više pokušaja' }
 }
 
 export type CheckoutFailureLog = {

@@ -45,7 +45,7 @@ export const POST: APIRoute = async ({ request }) => {
     const customerEmailResult = await resend.emails.send({
       from: 'Eko Leventić <info@eko-leventic.hr>', // Verificirana domena
       to: order.customer.email, // Samo kupac prima potvrdu narudžbe
-      subject: `Potvrda narudžbe #${order.id} - Eko Leventić`,
+      subject: `Potvrda narudžbe ${order.id} - Eko Leventić`,
       html: customerEmailHtml,
     })
 
@@ -59,7 +59,7 @@ export const POST: APIRoute = async ({ request }) => {
     const adminEmailResult = await resend.emails.send({
       from: 'Eko Leventić <info@eko-leventic.hr>', // Verificirana domena
       to: adminEmail, // Admin prima obavijest o novoj narudžbi
-      subject: `Nova narudžba #${order.id} - Eko Leventić`,
+      subject: `Nova narudžba ${order.id} - Eko Leventić`,
       html: adminEmailHtml,
     })
 
@@ -121,12 +121,12 @@ function generateEmailHtml(order: any): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Potvrda narudžbe #${order.id}</title>
+  <title>Potvrda narudžbe ${order.id}</title>
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
   <div style="background-color: #f0f9f4; border: 2px solid #22c55e; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
     <h1 style="color: #15803d; margin: 0;">Narudžba je uspješno kreirana!</h1>
-    <p style="margin: 10px 0 0 0; color: #166534;">Broj narudžbe: <strong>#${order.id}</strong></p>
+    <p style="margin: 10px 0 0 0; color: #166534;">Broj narudžbe: <strong>${order.id}</strong></p>
   </div>
 
   <p>Poštovani/a ${order.customer.firstName} ${order.customer.lastName},</p>
@@ -134,7 +134,7 @@ function generateEmailHtml(order: any): string {
   <p>Hvala vam na narudžbi! Vaša narudžba je primljena i čeka uplatu.</p>
 
   <h2 style="color: #1f2937; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">DETALJI NARUDŽBE</h2>
-  <p><strong>Broj narudžbe:</strong> #${order.id}</p>
+  <p><strong>Broj narudžbe:</strong> ${order.id}</p>
   <p><strong>Datum:</strong> ${orderDate}</p>
   <p><strong>Status:</strong> <span style="color: #ea580c;">Na čekanju uplate / Pending payment</span></p>
 
@@ -192,7 +192,8 @@ function generateEmailHtml(order: any): string {
 
     <div style="margin: 15px 0; padding: 15px; background-color: #f8fafc; border-radius: 6px;">
       <p style="margin: 5px 0;"><strong>Model:</strong> ${bankDetails.model}</p>
-      <p style="margin: 5px 0;"><strong>Poziv na broj:</strong> ${order.id}</p>
+      <p style="margin: 5px 0;"><strong>Poziv na broj:</strong> ${order.paymentReference || order.id}</p>
+      <p style="margin: 5px 0; font-size: 13px; color: #6b7280;">Upišite samo brojeve, bez prefiksa (model HR00)</p>
     </div>
   </div>
 
@@ -274,16 +275,16 @@ function generateAdminNotificationHtml(order: any): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nova narudžba #${order.id}</title>
+  <title>Nova narudžba ${order.id}</title>
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
   <div style="background-color: #dbeafe; border: 2px solid #3b82f6; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
     <h1 style="color: #1e40af; margin: 0;">🆕 Nova narudžba primljena!</h1>
-    <p style="margin: 10px 0 0 0; color: #1e3a8a;">Broj narudžbe: <strong>#${order.id}</strong></p>
+    <p style="margin: 10px 0 0 0; color: #1e3a8a;">Broj narudžbe: <strong>${order.id}</strong></p>
   </div>
 
   <h2 style="color: #1f2937; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">DETALJI NARUDŽBE</h2>
-  <p><strong>Broj narudžbe:</strong> #${order.id}</p>
+  <p><strong>Broj narudžbe:</strong> ${order.id}</p>
   <p><strong>Datum i vrijeme:</strong> ${orderDate}</p>
   <p><strong>Status:</strong> <span style="color: #ea580c;">Na čekanju uplate / Pending payment</span></p>
   <p><strong>Poziv na broj:</strong> ${order.paymentReference}</p>
@@ -340,7 +341,7 @@ function generateAdminNotificationHtml(order: any): string {
 
   <div style="background-color: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px; padding: 15px; margin: 20px 0;">
     <p style="margin: 0; font-size: 14px; color: #78350f;">
-      <strong>Napomena:</strong> Provjerite uplatu koristeći poziv na broj: <strong style="font-family: monospace;">REF${order.paymentReference}</strong>
+      <strong>Napomena:</strong> Provjerite uplatu koristeći poziv na broj: <strong style="font-family: monospace;">${order.paymentReference || order.id}</strong>
     </p>
   </div>
 

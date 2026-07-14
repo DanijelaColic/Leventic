@@ -34,8 +34,8 @@ export type OrderStatus = 'pending_payment' | 'processing' | 'shipped' | 'comple
 export type DeliveryMethod = 'delivery' | 'pickup'
 
 export interface Order {
-  id: string // Broj narudžbe (npr. 12345678, bez # - dodaje se samo za prikaz)
-  orderNumber: string // Isti kao id (npr. 12345678)
+  id: string // Broj narudžbe (npr. 260714042)
+  orderNumber: string // Isti kao id
   customer: {
     firstName: string
     lastName: string
@@ -57,13 +57,11 @@ export interface Order {
 }
 
 /**
- * Generira jedinstveni broj narudžbe (timestamp + random — bez kolizija)
+ * @deprecated Broj narudžbe se generira server-side (YYMMDD + dnevni broj).
+ * Ostavljeno samo za kompatibilnost sa starim kodom.
  */
 export function generateOrderNumber(): string {
-  const random = Math.floor(Math.random() * 10000)
-    .toString()
-    .padStart(4, '0')
-  return `${Date.now()}${random}`
+  throw new Error('generateOrderNumber() je zamijenjen server-side generatorom')
 }
 
 /**

@@ -71,10 +71,6 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const order = validation.data
-    if (!order.order_number) {
-      order.order_number = `ORD-${Date.now()}`
-    }
-
     const result = await createOrderInDatabase(order)
 
     if (result.error) {

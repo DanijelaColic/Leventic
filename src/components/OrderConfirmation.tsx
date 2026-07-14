@@ -224,7 +224,7 @@ export default function OrderConfirmation({ orderId }: OrderConfirmationProps) {
               Narudžba je uspješno kreirana!
             </h1>
             <p className="text-green-700 mt-1">
-              Broj narudžbe: <strong>#{order.id}</strong>
+              Broj narudžbe: <strong>{order.id}</strong>
             </p>
           </div>
         </div>
@@ -237,7 +237,7 @@ export default function OrderConfirmation({ orderId }: OrderConfirmationProps) {
           <div className="bg-gray-50 rounded-lg p-6 space-y-3">
             <div>
               <p className="text-sm text-gray-500">Broj narudžbe</p>
-              <p className="font-semibold">#{order.id}</p>
+              <p className="font-semibold">{order.id}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Datum</p>
@@ -396,7 +396,10 @@ export default function OrderConfirmation({ orderId }: OrderConfirmationProps) {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Poziv na broj</p>
-                <p className="font-semibold text-lg">{order.paymentReference}</p>
+                <p className="font-semibold text-lg font-mono">{order.paymentReference}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Upišite samo brojeve, bez prefiksa (model HR00)
+                </p>
               </div>
             </div>
 

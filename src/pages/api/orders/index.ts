@@ -57,7 +57,7 @@ export const POST: APIRoute = async ({ request }) => {
       result.error.includes('unique')
 
     await logCheckoutFailure({
-      order_number: order.order_number,
+      order_number: order.order_number || '',
       customer_email: order.customer_email,
       customer_name: order.customer_name,
       customer_phone: order.customer_phone,
